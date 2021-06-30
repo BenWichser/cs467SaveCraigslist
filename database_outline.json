@@ -1,0 +1,67 @@
+# Save Craigslist
+# Database Layout -- NoSQL model
+
+# Users
+User = {
+    'id': 'String',
+    'email': 'String',
+    'username': 'String',
+    'password': 'Hashed String',
+    'photo': 'URL String',
+    'zip': 'String',
+    'rating_buyer': %1.2f,
+    'rating_seller': %1.2f,
+    'items_bought':
+    [
+        {
+            'item_id': 'String',
+            'item_seller_id': 'String',
+            'purchase_date': 'YYYY-MM-DD String',
+            'transaction_rating_from_seller': %d,
+            'transaction_rating_from_buyer': %d
+        }
+    ]
+    'current_listings': 
+    [
+        'String -- item_id'
+    ]
+    'past_listings':
+    [
+        'String - item_id'
+    ]
+    'recent_searches':
+    [
+        'String' (limit size of array)
+    ]
+}
+
+
+# Items
+Item = {
+    'id': 'String',
+    'title': 'String',
+    'description': 'String',
+    'price': %10.2f,
+    'location': 'String',
+    'status': 'String -- option between "For Sale", "Pending", "Sold"'
+    'photos':
+    [
+        {
+            'caption': 'String',
+            'URL': 'URL String'
+        }
+    ],
+    'tags':
+    [
+        'String'
+    ]
+}
+
+
+#Messages
+Message = {
+    'sender_id': 'String',
+    'receiver_id': 'String',
+    'date_sent': 'DateTime String',
+    'content': 'String'
+}
