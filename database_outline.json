@@ -1,5 +1,5 @@
-# Save Craigslist
-# Database Layout -- NoSQL model
+## Save Craigslist
+## Database Layout -- NoSQL model
 
 # Users
 User = {
