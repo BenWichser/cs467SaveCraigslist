@@ -2,6 +2,7 @@ const express = require("express"),
   { body, validationResult } = require("express-validator"),
   customValidation = require("../middleware"),
   db = require("../function"),
+  aws = require("aws-sdk"),
   bodyParser = require("body-parser");
 const router = express.Router();
 
@@ -32,7 +33,12 @@ router.post(
 
 router.get("/", async (req, res) => {
   let listings = await db.getAllItems("items", null);
-  res.status(201).json(listings);
+  let output = [];
+
+  listings.Items.forEach((item) => {
+    output.push(aws.DynamoDB.Converter.unmarshall(item));
+  });
+  res.status(201).json(output);
 });
 
 router.get("/:item_id", (req, res) => {

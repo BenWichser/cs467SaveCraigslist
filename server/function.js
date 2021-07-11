@@ -82,7 +82,6 @@ async function getAllItems(datatype, lastEval) {
   };
   try {
     const action = await ddbClient.send(new ScanCommand(params));
-    console.log(action);
     return action;
   } catch (err) {
     console.log(err);
