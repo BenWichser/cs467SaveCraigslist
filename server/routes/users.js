@@ -7,7 +7,6 @@ const express = require("express"),
 const router = express.Router();
 
 router.use(bodyParser.json());
-router.use(customValidation.validate);
 
 router.post(
   "/",
@@ -16,6 +15,7 @@ router.post(
     body("username").exists(),
     body("password").exists(),
   ],
+  customValidation.validate,
   async (req, res) => {
     let password = await db.hashPassword(req.body.password);
     db.createItem("users", {
@@ -46,12 +46,13 @@ router.put(
     body("username").exists(),
     body("password").exists(),
   ],
+  customValidation.validate,
   (req, res) => {
     res.status(200).send();
   }
 );
 
-router.delete("/:user_id", (req, res) => {
+router.delete("/:user_id", customValidation.isLoggedIn, (req, res) => {
   db.deleteItem("users", req.params.user_id);
   res.status(204).send();
 });

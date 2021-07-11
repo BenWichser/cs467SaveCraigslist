@@ -7,6 +7,7 @@ const express = require("express"),
   db = require("./function"),
   crypt = require("bcrypt"),
   _ = require("lodash"),
+  customValidation = require("./middleware"),
   bodyParser = require("body-parser");
 
 let session = require("express-session");
@@ -17,6 +18,7 @@ const app = express();
 app.set("trust proxy", 1);
 
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 app.use("/users", users);
 app.use("/items", items);
 app.use("/messages", messages);
@@ -34,6 +36,7 @@ app.use(
 app.post(
   "/login",
   [body("username").exists(), body("password").exists()],
+  customValidation.validate,
   async (req, res) => {
     let user = await db.getItem("users", req.body.username);
     if (_.isUndefined(user.Item)) {
@@ -56,10 +59,7 @@ app.post(
   }
 );
 
-app.post("/logout", (req, res) => {
-  if (_.isUndefined(req.session)) {
-    return res.status(400).json({ error: "You're not logged in!" });
-  }
+app.post("/logout", customValidation.isLoggedIn, (req, res) => {
   req.session.destroy();
   return res.status(200).send("Logged Out");
 });
