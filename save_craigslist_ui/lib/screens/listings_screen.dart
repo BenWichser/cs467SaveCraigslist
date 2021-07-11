@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
 import '../components/item_display.dart';
 import '../models/item.dart';
 
 class ListingsScreen extends StatelessWidget {
   const ListingsScreen({ Key? key }) : super(key: key);
 
+  //Right now using global JSON here. I'm converting the JSON into a list of Item objects. 
+  //Then I'm using those Item objects to create a list ItemDisplay Widgets. 
+  //Then I pass the list of ItemDisplay widgets to ListView
+  
   static final List<Item> itemList = convertFromJSONToItemList(JSONItems);
   static final List<ItemDisplay> ItemDisplays = createListOfItemDisplays(itemList);
 
@@ -14,13 +19,6 @@ class ListingsScreen extends StatelessWidget {
       body: ListView(children: ItemDisplays)
     );
   }
-}
-
-Widget itemList(List<ItemDisplay> items)
-{
-  return ListView(
-    children: items
-  );
 }
 
 List<Item> convertFromJSONToItemList(List<Map> JSONItems){
