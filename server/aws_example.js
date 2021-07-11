@@ -1,3 +1,5 @@
+// Import required AWS SDK clients and commands for Node.js.
+// Set the parameters
 // IMPORTS
 // AWS-specific commands
 var {
@@ -6,8 +8,18 @@ var {
     PutItemCommand,
     DeleteItemCommand
 } = require("@aws-sdk/client-dynamodb");
-// ddbClient construction -- created from AWS documentation but not provided in
-//  AWS package
+var { 
+    PutObjectCommand,                   // Puts a single object in S3 bucket 
+    CreateBucketCommand,                // Creates a S3 bucket
+    ListObjectsCommand,                 // Lists all objects in an S3 bucket
+    DeleteObjectCommand,                // Deletes a single object in an S3 bucket
+    DeleteBucketCommand                 // Delets an empty S3 bucket
+} = require("@aws-sdk/client-s3");
+
+// ddbClient and s3Client construction -- created from AWS documentation 
+// but not provided in AWS package
+
+var { s3Client } = require("./libs/sampleClient.js");
 var { ddbClient } = require("./libs/ddbClient.js");
 
 
@@ -43,7 +55,7 @@ let fetchOneByKey = async function (tablename, username = "") {
     var params = {
         TableName: tablename,
         Key: {
-            "username": { S: username },
+            "id": { S: username },
         },
         ProjectionExpression: "email",
     };
@@ -73,7 +85,7 @@ let addUser = async function (userObject) {
         Item:
         {
             zip: {S: userObject.zip},
-            username: {S: userObject.username},
+            id: {S: userObject.username},
         },
     };
     try 
@@ -100,7 +112,7 @@ let deleteUser = async function (username) {
     var params = {
         TableName: "users",
         Key: {
-            username: {S: username},
+            id: {S: username},
             },
         };
     try
@@ -122,14 +134,158 @@ let deleteUser = async function (username) {
 };
 
 
+let createBucket = async function(bucketName){
+    /* createBucket
+     * Creates a new AWS bucket with specified name.
+     * Accepts
+     *  bucketName (string): name of AWS bucket to be created
+     * Returns:
+     *  JSON response from AWS server
+     */
+    try {
+        const data = await s3Client.send(
+             new CreateBucketCommand({ Bucket: bucketName})
+         );
+        console.log(data);
+        console.log("Successfully created a bucket called ", data.Location);
+        // uploadFile(bucketName, "TextTest.txt", "Text Test");
+        return data;
+    } catch (err) {
+        console.log("Error creating bucket:", err);
+    }
+};
+
+let uploadFile = async function(bucketName, fileName, fileContents){
+    /* uploadFile
+     * Uploads a specified file into a specified bucket.
+     * Accepts:
+     *  bucketName (string): Name of bucket into which file is uploaded
+     *  fileName (string): Name of file to be created
+     *  fileContents (string): Text of file to be created
+     */
+    const params = {
+        Bucket: bucketName,
+        Key: fileName,
+        Body: fileContents,
+    };
+    try {
+        const results = await s3Client.send(new PutObjectCommand(params));
+        console.log("Successfully created " + params.Key + 
+            " and uploaded it to " + params.Bucket + "/" + params.Key);
+        return results;
+    } catch (err) {
+        console.log(`Error uploading $params.Key`, err);
+    }
+};
+
+async function listAllBucketObjects(bucketName){
+    /* listAllBucketObjects
+     * Lists all objects in a certain S3 bucket.
+     * Accepts:
+     *  bucketName (string): Name of S3 bucket
+     * Returns:
+     *  array of all objects in the S3 bucket
+     */
+    const params = {Bucket: bucketName};
+    try {
+        const data = await s3Client.send(new ListObjectsCommand(params));
+        console.log(data.Contents);
+        return data.Contents;
+    } catch(err) {
+        console.log(`Error getting items from ${bucketName}`, err);
+    }
+}
+
+async function deleteAllBucketObjects(bucketName){
+    /* deleteAllBucketObjects
+     * Deletes all objects in S3 bucket
+     * Accepts:
+     *  bucketName (string): Name of S3 bucket
+     * Returns:
+     *  Nothing
+     */
+    // get list of bucket objects
+    const objectList = await listAllBucketObjects(bucketName);
+    console.log("This is what we have to delete:" + 
+        `${JSON.stringify(objectList)})`);
+    if (objectList.length != 0) 
+    {
+        for(let i = 0; i < objectList.length; i++)
+        {
+            try {
+                const data = await s3Client.send(new DeleteObjectCommand( {
+                    Key: objectList[i].Key, Bucket: bucketName }));
+                console.log(`Deleted ${objectList[i].Key} from ${bucketName}.`);
+            } catch (err) {
+                console.log(`Error deleting ${objectList.Key} from ${bucketName}` +
+                    err);
+            }
+        }
+    }
+    return;
+}
+
+async function deleteBucket(bucketName){
+    /* deleteBucket
+     * Deletes an S3 bucket with the given name.  Note: the bucket must be
+     *  already empty for AWS to delete.
+     * Accepts:
+     *  bucketName (string): Name of bucket to be deleted
+     * Returns:
+     *  Nothing
+     */
+    try {
+        const data = await s3Client.send( 
+            new DeleteBucketCommand({Bucket: bucketName}));
+        console.log(`Successfully deleted bucket ${bucketName}.`);
+        console.log(data);
+    } catch(err) {
+        console.log(`Error deleting bucket ${bucketName}:` + err);
+    }
+}
+
+async function dynamoDBTest(){
+    /* dynamoDBTest
+     * Goes through basic DynamoDB features.  All wrapped in this function to
+     * (needlessly, aside from feedback) enforce syncronicity among calls.
+     * Accepts:
+     *  Nothing
+     * Returns:
+     *  Nothing
+     */
+    console.log("Listing tables:");
+    await listTables();
+    console.log("Fetching an example from User table");
+    await fetchOneByKey("users", "joebiden46");
+    console.log("Adding a user:");
+    await addUser({zip: "80301", username: "mckenzry"});
+    console.log("Deleting the user we just added:");
+    await deleteUser("mckenzry");
+}
+
+async function s3Test() {
+    /* s3Test
+     * Goes through s3 bucket and file access process.  All wrapped in this
+     *  function to enforce syncronicity among files.
+     * Accepts:
+     *  Nothing
+     * Returns:
+     *  Nothing
+     */
+    console.log("Creating a bucket named TextTest");
+    await createBucket("wichserbentexttest");
+    console.log("Uploading text to TextTest bucket");
+    await uploadFile("wichserbentexttest", "HelloWorld.txt", "Hello world");    
+    console.log("Printing things in wichserbentexttest bucket");
+    const bucketContents = await listAllBucketObjects("wichserbentexttest");
+    console.log("Deleting each item in the bucket");
+    await deleteAllBucketObjects("wichserbentexttest");
+    console.log("Finally, we clean up by deleting the now-empty bucket");
+    await deleteBucket("wichserbentexttest");
+}
 
 
-// Script to go through functions
-console.log("Listing tables:");
-listTables();
-console.log("Fetching an example from User table");
-fetchOneByKey("users", "joebiden46");
-console.log("Adding a user:");
-addUser({zip: "80301", username: "mckenzry"});
-console.log("Deleting the user we just added:");
-deleteUser("mckenzry");
+// SCRIPT TO GO THROUGH TESTS
+dynamoDBTest();
+s3Test();
+
