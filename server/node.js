@@ -1,9 +1,12 @@
 const express = require("express"),
   { body, validationResult } = require("express-validator"),
-  { v4: uuidv4 } = require('uuid'),
+  { v4: uuidv4 } = require("uuid"),
   users = require("./routes/users.js"),
   items = require("./routes/items.js"),
   messages = require("./routes/messages.js"),
+  db = require("./function"),
+  crypt = require("bcrypt"),
+  _ = require("lodash"),
   bodyParser = require("body-parser");
 
 let session = require("express-session");
@@ -18,24 +21,47 @@ app.use("/users", users);
 app.use("/items", items);
 app.use("/messages", messages);
 
-app.use(session({
-  genid: uuidv4,
-  secret: "What is the airspeed velocity of a laden swallow?",
-  resave: false,
-  saveUninitialized: true,
-  cookie: {}
-}));
+app.use(
+  session({
+    genid: uuidv4,
+    secret: "What is the airspeed velocity of a laden swallow?",
+    resave: false,
+    saveUninitialized: true,
+    cookie: {},
+  })
+);
 
 app.post(
   "/login",
   [body("username").exists(), body("password").exists()],
-  (req, res) => {
-    req.session.username = req.body.username;
+  async (req, res) => {
+    let user = await db.getItem("users", req.body.username);
+    if (_.isUndefined(user.Item)) {
+      return res
+        .status(400)
+        .json({ error: "There is no such user in our system" });
+    }
+    const match = await crypt.compare(req.body.password, user.Item.password.S);
+
+    if (match) {
+      req.session.user = {
+        username: user.Item.id.S,
+        email: user.Item.email.S,
+      };
+    } else {
+      return res.status(400).json({ error: "Incorrect password" });
+    }
+
+    return res.status(200).send("OK");
   }
 );
 
-app.post('/logout', (req, res) => {
+app.post("/logout", (req, res) => {
+  if (_.isUndefined(req.session)) {
+    return res.status(400).json({ error: "You're not logged in!" });
+  }
   req.session.destroy();
+  return res.status(200).send("Logged Out");
 });
 
 app.listen(port, () => {
