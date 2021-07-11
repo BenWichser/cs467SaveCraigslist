@@ -9,8 +9,32 @@ var {
 // ddbClient construction -- created from AWS documentation but not provided in
 //  AWS package
 var { ddbClient } = require("./libs/ddbClient.js");
+const crypt = require("bcrypt");
 
-function createItem(datatype, data) {
+async function hashPassword(password) {
+  const salt = await crypt.genSalt(10);
+  const hash = await crypt.hash(password, salt);
+  return hash;
+}
+
+async function createItem(datatype, data) {
+  // createItem takes the table name and object to be posted and
+  // sends a putItemCommand with that data
+  // datatype: String (One of: "users", "messages", "items")
+  // data: Object
+  const params = {
+    TableName: datatype,
+    Item: data,
+    ConditionExpression: "attribute_not_exists(id)",
+  };
+  try {
+    const action = await ddbClient.send(new PutItemCommand(params));
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+function updateItem(datatype, data) {
   // createItem takes the table name and object to be posted and
   // sends a putItemCommand with that data
   // datatype: String (One of: "users", "messages", "items")
@@ -30,23 +54,12 @@ async function getItem(datatype, id) {
   // getItem takes the table name and object ID and returns that item
   // datatype: String (One of: "users", "messages", "items")
   // id: String
-  let params;
-
-  if (datatype === "users") {
-    params = {
-      TableName: datatype,
-      Key: {
-        username: { S: id },
-      },
-    };
-  } else {
-    params = {
-      TableName: datatype,
-      Key: {
-        id: { S: id },
-      },
-    };
-  }
+  const params = {
+    TableName: datatype,
+    Key: {
+      id: { S: id },
+    },
+  };
 
   try {
     const action = await ddbClient.send(new GetItemCommand(params));
@@ -81,23 +94,12 @@ function deleteItem(datatype, id) {
   // DeleteItemCommand for this id
   // datatype: String (One of: "users", "messages", "items")
   // id: String
-  let params;
-
-  if (datatype === "user") {
-    params = {
-      TableName: datatype,
-      Key: {
-        username: { S: id },
-      },
-    };
-  } else {
-    params = {
-      TableName: datatype,
-      Key: {
-        id: { S: id },
-      },
-    };
-  }
+  const params = {
+    TableName: datatype,
+    Key: {
+      id: { S: id },
+    },
+  };
   try {
     const action = ddbClient.send(new DeleteItemCommand(params));
   } catch (err) {
@@ -110,4 +112,5 @@ module.exports = {
   getItem,
   deleteItem,
   getAllItems,
+  hashPassword,
 };
