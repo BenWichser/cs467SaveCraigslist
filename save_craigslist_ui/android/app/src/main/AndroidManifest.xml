@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.save_craigslist_ui">
+    <uses-permission android:name="android.permission.INTERNET" />
    <application
         android:label="save_craigslist_ui"
         android:icon="@mipmap/ic_launcher">
