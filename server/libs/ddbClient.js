@@ -1,4 +1,4 @@
-var { DynamoDBClient } = require("@aws-sdk/client-dynamoDB");
+var { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 // Set the AWS Region.
 const REGION = "us-east-2"; //e.g. "us-east-1"
 // Create an Amazon DynamoDB service client object.
