@@ -17,15 +17,9 @@ class App extends StatelessWidget{
 }
 
 class MainTabController extends StatefulWidget {
-    static const tabs = [
-    Padding(
-      padding: EdgeInsets.all(10.0), 
-      child: Text('For Sale')
-    ),
-    Padding(
-      padding: EdgeInsets.all(10.0), 
-      child: Text('Messages')
-    ),
+    static final tabs = [
+    forSaleTab(),
+    messagesTab()
   ];
 
   @override
@@ -39,7 +33,6 @@ class _MainTabControllerState extends State<MainTabController> {
   //Right now AppBar is just being passed this _title string. Eventually this will likely be a widget to 
   //display a search bar. 
   String _title = 'Listings';
-
 
   @override
   Widget build(BuildContext context) {
@@ -126,3 +119,30 @@ Widget myListingsButton(BuildContext context) {
   );
 }
 
+Widget forSaleTab(){
+  return Container(
+      height: 60,
+      child: Column(children: [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 5), 
+          child: Icon(Icons.shopping_bag_outlined, size: 30)
+        ),
+        Text('For Sale')
+      ])
+    );
+}
+
+Widget messagesTab(){
+  return Container(
+      height: 60,
+      child: Column(children: [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 5), 
+          child: Icon(Icons.mail_outlined, size: 30)
+        ),
+        Text('Messages')
+      ])
+    );
+}
+
+//Changing something here to make sure git is tracking this.
