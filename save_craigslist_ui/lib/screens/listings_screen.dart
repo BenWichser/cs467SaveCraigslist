@@ -1,29 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../components/item_display.dart';
 import '../models/item.dart';
 
-class ListingsScreen extends StatelessWidget {
+class ListingsScreen extends StatefulWidget {
   const ListingsScreen({ Key? key }) : super(key: key);
 
-  static final List<Item> itemList = convertFromJSONToItemList(JSONItems);
-  static final List<ItemDisplay> ItemDisplays = createListOfItemDisplays(itemList);
+  @override
+  _ListingsScreenState createState() => _ListingsScreenState();
+}
 
+
+class _ListingsScreenState extends State<ListingsScreen> {
+  
   @override
   Widget build(BuildContext context) {
+    //We get the list of every item in the database as a future. The futurebuilder checks
+    //for data, converts the json to a list of Item objects, creates a list of ItemDisplay widgets
+    //and returns the list in a Listview.
+
     return Scaffold(
-      body: ListView(children: ItemDisplays)
-    );
+      body: FutureBuilder(
+        future: http.get(Uri.parse('http://10.0.2.2:8080/items')), 
+        builder: (context, snapshot) {
+          if (snapshot.hasData){
+            dynamic jsonList = snapshot.data;
+            List<Item> itemList = convertFromJSONToItemList(jsonDecode(jsonList.body));
+            List<ItemDisplay> itemDisplays = createListOfItemDisplays(itemList);
+            return ListView(children: itemDisplays);
+          }
+          else if (snapshot.hasError){
+            return Text('Error loading items'); 
+          }
+          else {
+            //Spinny wheel while the data loads
+            return Center(child: CircularProgressIndicator()); 
+          }
+        }
+      )
+    ); 
   }
 }
 
-Widget itemList(List<ItemDisplay> items)
-{
-  return ListView(
-    children: items
-  );
-}
 
-List<Item> convertFromJSONToItemList(List<Map> JSONItems){
+List<Item> convertFromJSONToItemList(List<dynamic> JSONItems){
   List<Item> items = [];
 
   for (Map item in JSONItems){
@@ -32,9 +53,9 @@ List<Item> convertFromJSONToItemList(List<Map> JSONItems){
       title: item['title'],
       description: item['description'],
       seller_id: item['seller_id'],
-      price: item['price'],
+      price: item['price'].toDouble(),
       location: item['location'],
-      photos: item['photos']
+      //photos: item['photos']
       );
 
     items.add(newItem);
@@ -53,6 +74,12 @@ List<ItemDisplay> createListOfItemDisplays(List<Item> items){
 
   return displayableItems;
 }
+
+
+/*
+App is successfully getting items from the database. No longer need this dummy data. Keeping it for now
+in case I need it for debugging. 
+
 
 //DUMMY DATA to be replaced with real JSON
 List<Map> JSONItems = [{
@@ -165,3 +192,25 @@ List<Map> JSONItems = [{
   'status' : 'For Sale',
   'photos' : ['url1', 'url2', 'url3'],
 }];
+
+List<Map> JSONItems2 = [
+  {
+    "photos":
+      [{"caption":"Front Mug Shot","URL":"savecl-s3-us-east-2.aws.com/frontmugshot.png"},
+      {"caption":"Side Mug Shot","URL":"savecl-s3-us-east-2.aws.com/sidemugshot.png"}],
+    "location":"02134",
+    "seller_id":"mckenzry",
+    "description":"Coffee Mug displaying \"World's Best Boss\"",
+    "id":"2",
+    "price":9.76,
+    "title":"Coffee Mug"
+  },
+  {
+    "location":"90210",
+    "id":"1",
+    "description":"Empty Altoids Tin.  Holds buttons expertly.",
+    "price":2,
+    "seller_id":"mckenzry",
+    "title":"Empty Altoids Tin"
+  }];
+  */

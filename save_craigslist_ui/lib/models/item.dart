@@ -5,7 +5,7 @@ class Item {
   final String seller_id;
   final double price;
   final String location;
-  final List<String> photos;
+  //List<dynamic> photos = [];
 
   final String status = 'For Sale';
 
@@ -16,6 +16,6 @@ class Item {
     required this.seller_id, 
     required this.price,
     required this.location,
-    required this.photos
+    //required this.photos
   });
 }
