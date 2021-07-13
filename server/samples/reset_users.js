@@ -112,9 +112,6 @@ async function insertSampleData(tablename, entries) {
         // add in any other keys that are present
         console.log(entry);
         for(var field in entry) {
-            console.log(field);
-            console.log(userTemplate[field]);
-            console.log(entry[field]);
             const newKey = userTemplate[field];
             const newValue = entry[field];
             params.Item[ [field] ]   = { [newKey]: newValue};
@@ -133,7 +130,6 @@ async function insertSampleData(tablename, entries) {
     }
 };
 
-
 async function reset_users() {
     /* reset_users
      * Deletes all entries in "users" and replaces with sample data
@@ -146,9 +142,9 @@ async function reset_users() {
     await deleteAllTableEntries("users");
     // populate "users" with sample data
     const usersToInsert =  [sampleUserA, sampleUserB, sampleUserC];
-    console.log(userTemplate);
     await insertSampleData("users", usersToInsert);
 }
 
-// script
+
+// SCRIPT
 reset_users();
