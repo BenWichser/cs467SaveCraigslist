@@ -27,6 +27,7 @@ const {
     ListObjectsCommand,      // List items in s3 bucket      
     PutObjectCommand,        // Place item in S3 bucket
 } = require("@aws-sdk/client-s3");
+db = require("../function"),
 
 
 // Functions
@@ -36,7 +37,7 @@ async function listAllBucketObjects(bucketName){
      * Accepts:
      *  bucketName (string): Name of S3 bucket
      * Returns:
-     *  array of all objects in the S3 bucket
+     *  Array of all objects in the S3 bucket
      */
     const params = {Bucket: bucketName};
     try {
@@ -56,7 +57,12 @@ async function deleteAllBucketObjects(bucketName){
      *  Nothing
      */
     // get list of bucket objects
-    const objectList = await listAllBucketObjects(bucketName);
+    try{
+        var objectList = await listAllBucketObjects(bucketName);
+    } catch(err) {
+        console.log(`Error getting all items from ${bucketName}`);
+    }
+    // delete all bucket objects
     if (objectList && objectList.length != 0) 
     {
         for(let i = 0; i < objectList.length; i++)
@@ -241,6 +247,11 @@ async function insertSampleData(tablename, entries) {
         // add in any other keys that are present
         for(var field in entry)
             params.Item[ [field] ]   = { [userTemplate[field]]: entry[field]};
+        // redo password as hashed/salted password
+        if ('password' in entry)
+            params.Item.password = {
+                S: await db.hashPassword(entry.password)
+            };  
         // upload user photo
         await uploadUserPhoto(params);
         // test download of user photo
