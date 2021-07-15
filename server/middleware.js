@@ -13,7 +13,7 @@ function validate(req, res, next) {
 }
 
 function isLoggedIn(req, res, next) {
-  if (_.isUndefined(req.session.user)) {
+  if (_.isUndefined(req.session.user) || _.isUndefined(req.session)) {
     return res.status(400).json({ error: "You're not logged in!" });
   } else {
     next();
