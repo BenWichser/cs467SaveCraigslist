@@ -1,21 +1,21 @@
 class Item {
-  final String id;
+  String? id = 'tbd';
   final String title;
-  final String description;
+  String? description = 'This item doesn\'t have a description';
   final String seller_id;
   final double price;
   final String location;
-  //List<dynamic> photos = [];
+  List<dynamic>? photos = [];
 
   final String status = 'For Sale';
 
   //Constructor with required named parameters
-  Item({required this.id, 
+  Item({this.id, 
     required this.title, 
-    required this.description, 
+    this.description, 
     required this.seller_id, 
     required this.price,
     required this.location,
-    //required this.photos
+    this.photos
   });
 }
