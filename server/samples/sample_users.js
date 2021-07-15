@@ -1,7 +1,7 @@
 /* Sample Users for SaveCraigsList */
 
 const sampleUserA = {
-    id: "jamesbutt",
+    id: "jbutt",
     email: "jbutt@gmail.com",
     password: "password",
     zip: "70116",

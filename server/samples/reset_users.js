@@ -1,4 +1,4 @@
-/* Removes all entries in `users` table and adds the new users */ 
+/* Removes all entries in `items` table and adds the new items */ 
 
 // Required items and functions
 const path = require("path");
@@ -287,3 +287,7 @@ async function reset_users() {
 
 // SCRIPT
 reset_users();
+
+
+// EXPORTS
+module.exports = {reset_users};
