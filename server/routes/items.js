@@ -29,7 +29,7 @@ router.post(
       price: { N: req.body.price },
       location: { S: req.body.location },
       status: { S: req.body.status },
-      description: { S: req.body.description }
+      description: {S: req.body.description}
     });
     res.status(201).send();
   }
