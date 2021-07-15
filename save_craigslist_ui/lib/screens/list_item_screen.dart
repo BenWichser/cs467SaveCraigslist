@@ -12,7 +12,7 @@ class ListItemScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('List an Item')),
-      body: ItemForm()
+      body: ItemForm(),
     );
   }
 }
@@ -55,16 +55,22 @@ class _ItemFormState extends State<ItemForm> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  print('Posting Item');
-                  String title = titleController.text;
-                  String price = priceController.text;
-                  String description = descriptionController.text;
 
-                  /* ***************************
-                  Need to add photos, get seller_id and location from current user
+                  if(_formKey.currentState!.validate()){
+                    /* ***************************
+                    Need to add photos, get seller_id and location from current user
 
-                  ***************************** */
-                  postItem(title, price, description);
+                    ***************************** */
+                    postItem(
+                      titleController.text, 
+                      priceController.text, 
+                      descriptionController.text,
+                      context);
+
+                    //Reset fields and hide keyboard
+                    _formKey.currentState?.reset();
+                    SystemChannels.textInput.invokeMethod('TextInput.hide');
+                  }
                 },
                 child: const Text('Post Item!'),
                 )
@@ -100,7 +106,12 @@ Widget TitleField(TextEditingController titleController){
         decoration: InputDecoration(
           border: InputBorder.none,
           hintText: 'Title',
-        )
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty){
+            return 'Please enter a title.';
+          }
+        }
       )
     )
   );   
@@ -119,7 +130,15 @@ Widget PriceField(TextEditingController priceController){
         decoration: InputDecoration(
           border: InputBorder.none,
           hintText: 'Price',
-        )
+        ),
+      validator: (value) {
+        if (value == null || value.isEmpty){
+          return 'Please enter a price.';
+        }
+        if (!isValidPrice(value)){
+          return 'Please enter a valid price.';
+        }
+      }
       )
     )
   );   
@@ -138,13 +157,19 @@ Widget DescriptionField(TextEditingController descriptionController){
         decoration: InputDecoration(
           border: InputBorder.none,
           hintText: 'Description',
-        )
+        ),
+      validator: (value) {
+        if (value == null || value.isEmpty){
+          return 'Please enter a description.';
+        }
+      }
       )
     )
   );  
 }
 
-void postItem(String title, String price, String description) async {
+void postItem(String title, String price, String description, BuildContext context) async {
+    
   //NEED TO ADD PHOTOS AND LOCATION
   var newItem = {
     'title': title,
@@ -156,13 +181,29 @@ void postItem(String title, String price, String description) async {
   };
 
   var response = await http.post(Uri.parse('${hostURL}:${port}/items'),
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: {"Content-Type": "application/json"},
       body: jsonEncode(newItem)
-      );
-      //encoding: Encoding.getByName("utf-8"));
+  );
 
-    print('response: ');
-    //print(jsonDecode(response.body));
+  //If success display success message otherwise display error message. 
+  if(response.statusCode == 201){
+    final successBar = SnackBar(content: Text('Thank you for posting this item!'));
+    ScaffoldMessenger.of(context).showSnackBar(successBar);
+  }
+  else {
+    final successBar = SnackBar(content: Text('Error posting item. Please try again.'));
+    ScaffoldMessenger.of(context).showSnackBar(successBar);
+  };
+
+}
+
+bool isValidPrice(String value){
+  try{
+    double.parse(value);
+  }
+  on FormatException{
+    return false;
+  }
+
+  return true;
 }

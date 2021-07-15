@@ -10,14 +10,16 @@ class ItemScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(item.title)),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          itemPhotos(),
-          itemInfo(item),
-          itemDescription(item),
-          sellerSection()
-        ]
+      body: SingleChildScrollView(
+          child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            itemPhotos(),
+            itemInfo(item),
+            itemDescription(item),
+            sellerSection()
+          ]
+        )
       )
     );
   }
@@ -84,7 +86,7 @@ Widget itemDescription(item){
 Widget sellerSection(){
   return SingleChildScrollView(
     child: Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.only(right: 20, left: 20, bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -29,9 +29,14 @@ class ItemDisplay extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
+              //Image(
+              //  image: NetworkImage('https://savecraigslistitems.s3.us-east-2.amazonaws.com/danish_art.jpeg'),
+              //  height: 50,
+              //  width: 50
+              //),
               Placeholder(
-              fallbackHeight: 50,
-              fallbackWidth: 50
+                fallbackHeight: 50,
+                fallbackWidth: 50
               ),
             Padding(
               padding: EdgeInsets.all(10), 
