@@ -55,7 +55,7 @@ List<Item> convertFromJSONToItemList(List<dynamic> JSONItems){
       seller_id: item['seller_id'],
       price: item['price'].toDouble(),
       location: item['location'],
-      //photos: item['photos']
+      photos: item['photos']
       );
 
     items.add(newItem);
