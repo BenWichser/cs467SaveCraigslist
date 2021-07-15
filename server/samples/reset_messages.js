@@ -26,7 +26,8 @@ async function reset_messages() {
 
 
 // SCRIPT
-reset_messages();
+if (require.main === module)
+    reset_messages();
 
 // EXPORTS
 module.exports = {reset_messages}

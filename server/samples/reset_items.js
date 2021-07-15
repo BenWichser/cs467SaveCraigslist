@@ -1,12 +1,7 @@
 /* Removes all entries in `items` table and adds the sample items */ 
 
 // Required items and functions
-const {
-    sampleItemA, 
-    sampleItemB, 
-    sampleItemC,
-    sampleItemD
-} = require("./sample_items.js");
+const { sampleItems} = require("./sample_items.js");
 const {
     insertSampleData,
     deleteAllTableEntries
@@ -26,13 +21,13 @@ async function reset_items() {
     await deleteAllTableEntries("items");
     console.log("All items deleted from table.");
     // populate "items" with sample data
-    const itemsToInsert =  [sampleItemA, sampleItemB, sampleItemC, sampleItemD];
-    await insertSampleData("items", itemsToInsert);
+    await insertSampleData("items", sampleItems);
 }
 
 
 // SCRIPT
-reset_items();
+if (require.main === module)
+    reset_items();
 
 // EXPORTS
 module.exports = {reset_items}
