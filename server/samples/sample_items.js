@@ -2,6 +2,7 @@
 
 const sampleItemA = {
     id: 'sampleItemA',
+    date_added: '1415577600000',
     title: 'Travel Mug',
     description: 'Light blue Starbucks travel mug, with straw.  Straw slightely gnawed on by small child. Paint is peeling on bottom edge, leaving a vintage patina.',
     seller_id: 'art',
@@ -42,6 +43,7 @@ const sampleItemA = {
 
 const sampleItemB = {
     id: 'sampleItemB',
+    date_added: '1621296000000',
     title: 'Altoids Tin',
     description: 'Used tin of Altoids.  Certified to be dent-free.  Any residual powder is from mints, though this is not guaranteed.',
     seller_id: 'jbutt',
@@ -59,6 +61,7 @@ const sampleItemB = {
 
 const sampleItemC = {
     id: 'sampleItemC',
+    date_added: '1626220800000',
     title: 'Molding Danish',
     description: 'Cheese Danish from Costco.  Was fresh when purchased.  This piece of Art art represents our muddled values: expiring food from a big box store, albeit a store that pays its employees well but also serves cheap hot dogs.',
     seller_id: 'art',
@@ -85,6 +88,7 @@ const sampleItemC = {
 
 const sampleItemD = {
     id: 'sampleItemD',
+    date_added: '1609891200000',
     title: 'Over Glasses Sunglasses',
     description: 'Be the coolest person on the block with these fly shades.  Made to fit over your other glasses, these provide eye protection and looks all at once!',
     seller_id: 'joebiden46',
