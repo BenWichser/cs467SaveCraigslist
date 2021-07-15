@@ -14,6 +14,7 @@ const userTemplate = {
 
 const itemTemplate = {
     'id': 'S',
+    'date_added': 'S',
     'title': 'S',
     'description': 'S',
     'seller_id': 'S',
