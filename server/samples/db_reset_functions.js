@@ -15,6 +15,7 @@ const {
     PutItemCommand,         // Create DynamoDB item
     ScanCommand,            // Read DynamoDB table
 } = require("@aws-sdk/client-dynamodb");
+const db = require("../function.js");
 
 // FUNCTIONS
 async function deleteThisTableEntry(tablename, user_id){
