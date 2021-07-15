@@ -3,6 +3,7 @@ const express = require("express"),
   customValidation = require("../middleware"),
   db = require("../function"),
   aws = require("aws-sdk"),
+  { v4: uuidv4 } = require("uuid"),
   bodyParser = require("body-parser");
 const router = express.Router();
 
@@ -16,16 +17,19 @@ router.post(
     body("price").exists().isFloat(),
     body("location").exists().isString(),
     body("status").exists().isString(),
+    body("description").exists().isString()
   ],
-  customValidation.isLoggedIn,
+  //customValidation.isLoggedIn,
   customValidation.validate,
   (req, res) => {
     db.createItem("items", {
+      id: { S: uuidv4() },
       title: { S: req.body.title },
       seller_id: { S: req.body.seller_id },
       price: { N: req.body.price },
       location: { S: req.body.location },
       status: { S: req.body.status },
+      description: { S: req.body.description }
     });
     res.status(201).send();
   }
@@ -53,6 +57,7 @@ router.put(
     body("price").exists().isFloat(),
     body("location").exists().isString(),
     body("status").exists().isString(),
+    body("description").exists().isString()
   ],
   customValidation.isLoggedIn,
   customValidation.validate,
