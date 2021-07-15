@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../server_url.dart';
 
 
 class ListItemScreen extends StatelessWidget {
@@ -154,7 +155,7 @@ void postItem(String title, String price, String description) async {
     'status': 'For Sale'
   };
 
-  var response = await http.post(Uri.parse('http://10.0.2.2:8080/items'),
+  var response = await http.post(Uri.parse('${hostURL}:${port}/items'),
       headers: {
         "Content-Type": "application/json"
       },

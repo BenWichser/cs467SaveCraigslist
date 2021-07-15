@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../components/item_display.dart';
 import '../models/item.dart';
+import '../server_url.dart';
 
 class ListingsScreen extends StatefulWidget {
   const ListingsScreen({ Key? key }) : super(key: key);
@@ -22,7 +23,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
 
     return Scaffold(
       body: FutureBuilder(
-        future: http.get(Uri.parse('http://10.0.2.2:8080/items')), 
+        future: http.get(Uri.parse('${hostURL}:${port}/items')), 
         builder: (context, snapshot) {
           if (snapshot.hasData){
             dynamic jsonList = snapshot.data;
