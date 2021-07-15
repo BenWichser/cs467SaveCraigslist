@@ -24,5 +24,5 @@ const sampleUserC = {
     photo: 'art.jpg', // Not standard.  Sample users only
 };
 
-
-module.exports = {sampleUserA, sampleUserB, sampleUserC};
+const sampleUsers = [sampleUserA, sampleUserB, sampleUserC];
+module.exports = {sampleUsers};

@@ -25,6 +25,7 @@ const itemTemplate = {
 }
 
 const messageTemplate = {
+    'id': 'S',
     'sender_id': 'S',
     'receiver_id': 'S',
     'date_sent': 'S',

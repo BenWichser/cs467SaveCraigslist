@@ -1,13 +1,7 @@
 /* Removes all entries in `users` table and adds the sample users */ 
 
 // Required items and functions
-const path = require("path");
-const fs = require("fs");
-const {
-    sampleUserA, 
-    sampleUserB, 
-    sampleUserC
-} = require("./sample_users.js");
+const {sampleUsers} = require("./sample_users.js");
 const {
     insertSampleData,
     deleteAllTableEntries
@@ -27,13 +21,13 @@ async function reset_users() {
     await deleteAllTableEntries("users");
     console.log("All users deleted from table.");
     // populate "users" with sample data
-    const usersToInsert =  [sampleUserA, sampleUserB, sampleUserC];
-    await insertSampleData("users", usersToInsert);
+    await insertSampleData("users", sampleUsers);
 }
 
 
 // SCRIPT
-reset_users();
+if (require.main === module)
+    reset_users();
 
 
 // EXPORTS
