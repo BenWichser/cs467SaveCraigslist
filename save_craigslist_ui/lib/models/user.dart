@@ -1,7 +1,6 @@
 class User {
   final String id;
   final String email;
-  final String username;
   final String password;
   final String photo;
   final String zip;
@@ -13,17 +12,17 @@ class User {
   //Constructor with required named parameters
   User({required this.id, 
     required this.email, 
-    required this.username, 
     required this.password, 
     required this.photo,
     required this.zip,
   });
 
+  User.nullUser() : id = 'Null', email = 'Null', password = 'Null', photo = 'Null', zip = 'Null';
+
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'],
       email: json['email'],
-      username: json['username'],
       password: json['password'],
       photo: json['photo'],
       zip: json['zip']

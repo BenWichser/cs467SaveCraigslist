@@ -27,7 +27,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
         builder: (context, snapshot) {
           if (snapshot.hasData){
             dynamic jsonList = snapshot.data;
-            debugPrint(jsonList.body, wrapWidth: 1024);
+            //debugPrint(jsonList.body, wrapWidth: 1024);
             List<Item> itemList = convertFromJSONToItemList(jsonDecode(jsonList.body));
             List<ItemDisplay> itemDisplays = createListOfItemDisplays(itemList);
             return ListView(children: itemDisplays);
