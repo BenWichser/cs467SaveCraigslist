@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../server_url.dart';
+import '../account.dart';
+import '../components/text_field.dart';
 
 
 class ListItemScreen extends StatelessWidget {
@@ -11,7 +13,20 @@ class ListItemScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('List an Item')),
+      appBar: AppBar(
+        title: Row(
+          children: [
+          CircleAvatar(
+            backgroundColor: Colors.black,
+            foregroundImage: NetworkImage(currentUser.photo)
+            //child: const Text('UN')
+          ),
+          Padding( 
+            padding: EdgeInsets.symmetric(horizontal: 10),
+            child: Text(currentUser.id))
+          ]
+        )
+      ),
       body: ItemForm(),
     );
   }
@@ -47,9 +62,13 @@ class _ItemFormState extends State<ItemForm> {
         child: Column(
           children: [
             UploadPhotos(),
-            TitleField(titleController),
+            SquareTextField(
+              fieldController: titleController,
+              hintText: 'Title'),
             PriceField(priceController),
-            DescriptionField(descriptionController),
+            SquareTextField(
+              fieldController: descriptionController,
+              hintText: 'Description'),
             Container(
               padding: EdgeInsets.symmetric(horizontal: 20),
               width: double.infinity,
@@ -93,30 +112,6 @@ Widget UploadPhotos(){
   ); 
 }
 
-Widget TitleField(TextEditingController titleController){
-  return Padding(
-    padding: EdgeInsets.only(top: 5, bottom: 5, left: 20, right: 20),
-    child: Container(
-      padding: EdgeInsets.all(5),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black),
-      ),
-      child: TextFormField(
-        controller: titleController,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          hintText: 'Title',
-        ),
-        validator: (value) {
-          if (value == null || value.isEmpty){
-            return 'Please enter a title.';
-          }
-        }
-      )
-    )
-  );   
-}
-
 Widget PriceField(TextEditingController priceController){
   return Padding(
     padding: EdgeInsets.only(top: 5, bottom: 5, left: 20, right: 20),
@@ -144,30 +139,6 @@ Widget PriceField(TextEditingController priceController){
   );   
 }
 
-Widget DescriptionField(TextEditingController descriptionController){
-  return Padding(
-    padding: EdgeInsets.only(top: 5, bottom: 5, left: 20, right: 20),
-    child: Container(
-      padding: EdgeInsets.all(5),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black),
-      ),
-      child: TextFormField(
-        controller: descriptionController,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          hintText: 'Description',
-        ),
-      validator: (value) {
-        if (value == null || value.isEmpty){
-          return 'Please enter a description.';
-        }
-      }
-      )
-    )
-  );  
-}
-
 void postItem(String title, String price, String description, BuildContext context) async {
     
   //NEED TO ADD PHOTOS AND LOCATION
@@ -175,8 +146,8 @@ void postItem(String title, String price, String description, BuildContext conte
     'title': title,
     'price': price,
     'description': description,
-    'seller_id': '1',
-    'location': 'place',
+    'seller_id': currentUser.id,
+    'location': currentUser.zip,
     'status': 'For Sale'
   };
 
