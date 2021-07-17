@@ -74,10 +74,12 @@ async function uploadPhoto(params){
      * Returns:
      *  Nothing.  Modifies s3 bucket.
      */
-    // create upload parameters
+    // add file content to params
     const file = "./photos/" +  params.Key;
     const filestream = fs.createReadStream(file);
     params.Body = filestream;
+    // make file publicly readable
+    params.ACL = "public-read";
     // Upload file to specified bucket.
     try {
         const data = await s3Client.send(new PutObjectCommand(params));
