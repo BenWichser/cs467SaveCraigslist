@@ -24,15 +24,8 @@ router.post(
   customValidation.validate,
   (req, res) => {
     let new_id = uuidv4();
-    db.createItem("items", {
-      id: { S: new_id },
-      title: { S: req.body.title },
-      seller_id: { S: req.body.seller_id },
-      price: { N: req.body.price },
-      location: { S: req.body.location },
-      status: { S: req.body.status },
-      description: { S: req.body.description },
-    });
+    let new_item = _.extend(req.body, { id: new_id });
+    db.createItem("items", aws.DynamoDB.Converter.marshall(new_item));
     res.status(201).json({ id: new_id });
   }
 );
