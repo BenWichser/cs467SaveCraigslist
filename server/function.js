@@ -5,11 +5,13 @@ var {
   DeleteItemCommand,
   BatchGetItemCommand,
   ScanCommand,
+  QueryCommand,
 } = require("@aws-sdk/client-dynamodb");
 // ddbClient construction -- created from AWS documentation but not provided in
 //  AWS package
 var { ddbClient } = require("./libs/ddbClient.js");
 const crypt = require("bcrypt");
+const _ = require("lodash");
 
 async function hashPassword(password) {
   const salt = await crypt.genSalt(10);
@@ -29,12 +31,13 @@ async function createItem(datatype, data) {
   };
   try {
     const action = await ddbClient.send(new PutItemCommand(params));
+    return action;
   } catch (err) {
     console.log(err);
   }
 }
 
-function updateItem(datatype, data) {
+async function updateItem(datatype, data) {
   // createItem takes the table name and object to be posted and
   // sends a putItemCommand with that data
   // datatype: String (One of: "users", "messages", "items")
@@ -44,7 +47,8 @@ function updateItem(datatype, data) {
     Item: data,
   };
   try {
-    const action = ddbClient.send(new PutItemCommand(params));
+    const action = await ddbClient.send(new PutItemCommand(params));
+    return action;
   } catch (err) {
     console.log(err);
   }
@@ -88,6 +92,33 @@ async function getAllItems(datatype, lastEval) {
   }
 }
 
+async function queryMessages(sender, receiver) {
+  const params = {
+    TableName: "messages",
+    FilterExpression: "(receiver_id = :r AND sender_id = :s)",
+    ExpressionAttributeValues: {
+      ":r": { S: receiver },
+      ":s": { S: sender },
+    },
+  };
+  const params2 = {
+    TableName: "messages",
+    FilterExpression: "(receiver_id = :s AND sender_id = :r)",
+    ExpressionAttributeValues: {
+      ":r": { S: receiver },
+      ":s": { S: sender },
+    },
+  };
+  try {
+    const action = await ddbClient.send(new ScanCommand(params));
+    const action2 = await ddbClient.send(new ScanCommand(params2));
+    let messages = _.concat(action.Items, action2.Items);
+    return messages;
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 function deleteItem(datatype, id) {
   // deleteItem takes the table name and id of an element and sends a
   // DeleteItemCommand for this id
@@ -112,4 +143,6 @@ module.exports = {
   deleteItem,
   getAllItems,
   hashPassword,
+  updateItem,
+  queryMessages,
 };
