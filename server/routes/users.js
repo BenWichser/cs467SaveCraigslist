@@ -33,7 +33,7 @@ router.get("/:user_id", async (req, res) => {
   if (_.isUndefined(user.Item)) {
     return res.status(404).json({ error: "This user doesn't exist" });
   } else {
-    user = _.omit(aws.DynamoDB.Converter.unmarshall(user), "password");
+    user = _.omit(aws.DynamoDB.Converter.unmarshall(user.Item), "password");
     return res.status(200).json(user);
   }
 });
