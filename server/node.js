@@ -55,7 +55,7 @@ app.post(
       return res.status(400).json({ error: "Incorrect password" });
     }
 
-    return res.status(200).send("OK");
+    return res.status(200).json(_.omit(user.Item, "password"));
   }
 );
 
