@@ -3,6 +3,7 @@ const express = require("express"),
   { body, validationResult } = require("express-validator"),
   db = require("../function"),
   _ = require("lodash"),
+  aws = require("aws-sdk"),
   customValidation = require("../middleware");
 const router = express.Router();
 
@@ -32,10 +33,8 @@ router.get("/:user_id", async (req, res) => {
   if (_.isUndefined(user.Item)) {
     return res.status(404).json({ error: "This user doesn't exist" });
   } else {
-    return res.status(200).json({
-      email: user.Item.email.S,
-      username: user.Item.id.S,
-    });
+    user = _.omit(aws.DynamoDB.Converter.unmarshall(user), "password");
+    return res.status(200).json(user);
   }
 });
 
