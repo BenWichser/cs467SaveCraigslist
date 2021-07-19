@@ -50,7 +50,10 @@ List<Item> convertFromJSONToItemList(List<dynamic> JSONItems){
   List<Item> items = [];
 
   for (Map item in JSONItems){
-    Item newItem = Item(
+
+    if(item.containsKey('photos') && item['photos'].length != 0)
+    {
+      Item newItem = Item(
       id: item['id'],  
       title: item['title'],
       description: item['description'],
@@ -60,7 +63,21 @@ List<Item> convertFromJSONToItemList(List<dynamic> JSONItems){
       photos: item['photos']
       );
 
-    items.add(newItem);
+      items.add(newItem);
+    }
+    else{
+      Item newItem = Item(
+      id: item['id'],  
+      title: item['title'],
+      description: item['description'],
+      seller_id: item['seller_id'],
+      price: item['price'].toDouble(),
+      location: item['location'],
+      );
+
+      items.add(newItem);
+    }
+
   }
 
   return items;
