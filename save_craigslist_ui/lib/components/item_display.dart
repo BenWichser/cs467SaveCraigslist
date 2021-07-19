@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:save_craigslist_ui/server_url.dart';
 import '../models/item.dart';
 import '../screens/item_screen.dart';
 
@@ -29,15 +30,16 @@ class ItemDisplay extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-              //Image(
-              //  image: NetworkImage('https://savecraigslistitems.s3.us-east-2.amazonaws.com/danish_art.jpeg'),
-              //  height: 50,
-              //  width: 50
-              //),
-              Placeholder(
-                fallbackHeight: 50,
-                fallbackWidth: 50
-              ),
+            Image(
+              image: NetworkImage('${s3ItemPrefix}${item.photos![0]['URL']}'),
+              height: 50,
+              width: 50,
+              fit: BoxFit.cover
+            ),
+            //Placeholder(
+            //  fallbackHeight: 50,
+            //  fallbackWidth: 50
+            //),
             Padding(
               padding: EdgeInsets.all(10), 
               child: Column(

@@ -37,7 +37,9 @@ class _MainTabControllerState extends State<MainTabController> {
         bottomNavigationBar: TabBar(
           tabs: MainTabController.tabs,
           onTap: onTabTapped),
-        body: TabBarView(children: screens),
+        body: TabBarView(
+          physics: NeverScrollableScrollPhysics(),
+          children: screens),
         drawer: userDrawer(context)
       )
     );

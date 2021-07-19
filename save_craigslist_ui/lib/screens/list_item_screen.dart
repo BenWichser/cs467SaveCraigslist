@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../server_url.dart';
 import '../account.dart';
-import '../components/text_field.dart';
+import '../components/square_text_field.dart';
 
 
 class ListItemScreen extends StatelessWidget {
@@ -144,7 +144,7 @@ void postItem(String title, String price, String description, BuildContext conte
   //NEED TO ADD PHOTOS AND LOCATION
   var newItem = {
     'title': title,
-    'price': price,
+    'price': double.parse(price),
     'description': description,
     'seller_id': currentUser.id,
     'location': currentUser.zip,

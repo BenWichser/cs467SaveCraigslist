@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../models/item.dart';
+import '../server_url.dart';
 
 class ItemScreen extends StatelessWidget {
   final Item item;
@@ -14,10 +17,10 @@ class ItemScreen extends StatelessWidget {
           child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            itemPhotos(),
+            itemPhotos(item),
             itemInfo(item),
             itemDescription(item),
-            sellerSection()
+            sellerSection(item)
           ]
         )
       )
@@ -25,12 +28,13 @@ class ItemScreen extends StatelessWidget {
   }
 }
 
-Widget itemPhotos(){
+Widget itemPhotos(Item item){
   return Padding(padding: EdgeInsets.all(20), 
     child: AspectRatio(
       aspectRatio: 1, 
-      //This needs to be replaced with the main item photo
-      child: Placeholder()
+      child: Image(
+        image: NetworkImage('${s3ItemPrefix}${item.photos![0]['URL']}')
+      )
       //eventually add more photos to be displayed below
     )
   ); 
@@ -83,7 +87,7 @@ Widget itemDescription(item){
   ); 
 }
 
-Widget sellerSection(){
+Widget sellerSection(item){
   return SingleChildScrollView(
     child: Padding(
       padding: EdgeInsets.only(right: 20, left: 20, bottom: 20),
@@ -97,20 +101,20 @@ Widget sellerSection(){
               fontSize: 20)
             )
           ),
-          sellerInfo()
+          sellerInfo(item)
         ]
       )
     )
   ); 
 }
 
-Widget sellerInfo() {
+Widget sellerInfo(item) {
 //This needs to eventually take the seller information as a parameter
 
   return Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
-      sellerPhotoAndName(),
+      sellerPhotoAndName(item),
       ElevatedButton(
         onPressed: () {print('Messaging Seller');},
         child: const Text('Message'),
@@ -119,16 +123,38 @@ Widget sellerInfo() {
   );
 }
 
-Widget sellerPhotoAndName() {
+Widget sellerPhotoAndName(item) {
 //This needs to eventually take the seller information as a parameter
   return Row(
     children: [
       Padding(
         padding: EdgeInsets.only(right: 5),
-        child: CircleAvatar(
-        backgroundColor: Colors.black,
-        child: const Text('SE')
-      )), 
-      Text('name')]
+        child: FutureBuilder(
+            future: http.get(Uri.parse('${hostURL}:${port}/users/${item.seller_id}')),
+            builder: (context, snapshot) {
+              if (snapshot.hasData){
+                dynamic sellerJSONString = snapshot.data;
+                Map sellerJSON = jsonDecode(sellerJSONString.body);
+
+                print("HERHERHERHERE");
+                debugPrint('${sellerJSON}', wrapWidth: 1024);
+
+                return CircleAvatar(
+                  backgroundColor: Colors.black,
+                  foregroundImage: NetworkImage('${s3UserPrefix}${sellerJSON['photo']}')
+                );
+
+              }
+              else if (snapshot.hasError){
+                return Text('Error loading seller'); 
+              }
+              else {
+                //Spinny wheel while the data loads
+                return Center(child: CircularProgressIndicator()); 
+              }
+            }        
+      )
+    ), 
+    Text(item.seller_id)]
   );
 }
