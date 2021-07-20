@@ -15,6 +15,7 @@ router.post(
     body("email").exists().isEmail(),
     body("username").exists(),
     body("password").exists(),
+    body("zip").exists()
   ],
   customValidation.validate,
   async (req, res) => {
@@ -23,6 +24,7 @@ router.post(
       email: { S: req.body.email },
       id: { S: req.body.username },
       password: { S: password },
+      zip: { S: req.body.zip}
     });
     res.status(201).send();
   }
