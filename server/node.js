@@ -7,6 +7,7 @@ const express = require("express"),
   db = require("./function"),
   crypt = require("bcrypt"),
   _ = require("lodash"),
+  aws = require("aws-sdk"),
   customValidation = require("./middleware"),
   bodyParser = require("body-parser");
 
@@ -54,8 +55,8 @@ app.post(
     } else {
       return res.status(400).json({ error: "Incorrect password" });
     }
-
-    return res.status(200).send("OK");
+    user = aws.DynamoDB.Converter.unmarshall(_.omit(user.Item, "password"));
+    return res.status(200).json(user);
   }
 );
 
