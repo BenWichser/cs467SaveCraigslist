@@ -2,6 +2,7 @@
 
 // Required items and functions
 const {sampleUsers} = require("./sample_users.js");
+const {uploadPhoto} = require("./s3_reset_functions.js");
 const {
     insertSampleData,
     deleteAllTableEntries
@@ -22,6 +23,11 @@ async function reset_users() {
     console.log("All users deleted from table.");
     // populate "users" with sample data
     await insertSampleData("users", sampleUsers);
+    // add blank user photo
+    await uploadPhoto({
+        Bucket: "savecraigslistusers",
+        Key: "blank_profile_picture.png"
+    });
 }
 
 

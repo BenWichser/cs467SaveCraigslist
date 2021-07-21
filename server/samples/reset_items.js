@@ -1,7 +1,8 @@
 /* Removes all entries in `items` table and adds the sample items */ 
 
 // Required items and functions
-const { sampleItems} = require("./sample_items.js");
+const {sampleItems} = require("./sample_items.js");
+const {uploadPhoto} = require("./s3_reset_functions.js");
 const {
     insertSampleData,
     deleteAllTableEntries
@@ -22,6 +23,11 @@ async function reset_items() {
     console.log("All items deleted from table.");
     // populate "items" with sample data
     await insertSampleData("items", sampleItems);
+    // upload default blank photo
+    await uploadPhoto({
+        Bucket: "savecraigslistitems",
+        Key: "no_image_available.jpeg"
+    });
 }
 
 
