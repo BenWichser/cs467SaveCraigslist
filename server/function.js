@@ -92,6 +92,24 @@ async function getAllItems(datatype, lastEval) {
   }
 }
 
+async function getAllUserItems(userId, lastEval) {
+  const params = {
+    TableName: "items",
+    FilterExpression: "seller_id = :s",
+    ExpressionAttributeValues: {
+      ":s": { S: userId },
+    },
+    Limit: 10,
+    ExclusiveStartKey: lastEval,
+  };
+  try {
+    const action = await ddbClient.send(new ScanCommand(params));
+    return action;
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 async function queryMessages(sender, receiver) {
   const params = {
     TableName: "messages",
@@ -145,4 +163,5 @@ module.exports = {
   hashPassword,
   updateItem,
   queryMessages,
+  getAllUserItems,
 };
