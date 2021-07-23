@@ -6,7 +6,9 @@ import '../models/item.dart';
 import '../server_url.dart';
 
 class ListingsScreen extends StatefulWidget {
-  const ListingsScreen({ Key? key }) : super(key: key);
+  final void Function() updateItems;
+
+  const ListingsScreen({ Key? key, required this.updateItems }) : super(key: key);
 
   @override
   _ListingsScreenState createState() => _ListingsScreenState();
@@ -29,7 +31,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
             dynamic jsonList = snapshot.data;
             //debugPrint(jsonList.body, wrapWidth: 1024);
             List<Item> itemList = convertFromJSONToItemList(jsonDecode(jsonList.body));
-            List<ItemDisplay> itemDisplays = createListOfItemDisplays(itemList);
+            List<ItemDisplay> itemDisplays = createListOfItemDisplays(itemList, widget.updateItems);
             return ListView(children: itemDisplays);
           }
           else if (snapshot.hasError){
@@ -83,11 +85,11 @@ List<Item> convertFromJSONToItemList(List<dynamic> JSONItems){
   return items;
 }
 
-List<ItemDisplay> createListOfItemDisplays(List<Item> items){
+List<ItemDisplay> createListOfItemDisplays(List<Item> items, updateItems){
   List<ItemDisplay> displayableItems = [];
 
   for(Item item in items){
-    ItemDisplay displayableItem = ItemDisplay(item: item);
+    ItemDisplay displayableItem = ItemDisplay(item: item, updateItems: updateItems);
     displayableItems.add(displayableItem);
   }
 

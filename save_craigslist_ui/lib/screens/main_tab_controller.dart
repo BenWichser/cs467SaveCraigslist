@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'listings_screen.dart';
 import 'messages_screen.dart';
 import 'list_item_screen.dart';
 import 'my_listings_screen.dart';
 import '../models/user.dart';
 import '../account.dart';
+import '../server_url.dart';
 
 class MainTabController extends StatefulWidget {
 
-    static final tabs = [
+  static final tabs = [
     forSaleTab(),
     messagesTab()
   ];
@@ -19,8 +21,14 @@ class MainTabController extends StatefulWidget {
 
 class _MainTabControllerState extends State<MainTabController> {
   int _currentIndex = 0;
-  final screens = [ListingsScreen(), MessagesScreen()];
 
+  void updateItems() {
+    setState( (){} );
+  }
+
+  
+
+  //Future allItems = http.get(Uri.parse('${hostURL}:${port}/items'));
 
 
   //Right now AppBar is just being passed this _title string. Eventually this will likely be a widget to 
@@ -29,8 +37,10 @@ class _MainTabControllerState extends State<MainTabController> {
 
   @override
   Widget build(BuildContext context) {
+    final screens = [ListingsScreen(updateItems: updateItems), MessagesScreen()];
+
     return DefaultTabController(
-      length: screens.length,
+      length: screens.length,                              //Needs to be changed if you add more tabs
       initialIndex: _currentIndex,
       child: Scaffold(
         appBar: AppBar(title: Text(_title)),
@@ -40,7 +50,7 @@ class _MainTabControllerState extends State<MainTabController> {
         body: TabBarView(
           physics: NeverScrollableScrollPhysics(),
           children: screens),
-        drawer: userDrawer(context)
+        drawer: userDrawer(context, updateItems)
       )
     );
   }
@@ -60,13 +70,13 @@ class _MainTabControllerState extends State<MainTabController> {
 
 }
 
-Widget userDrawer(BuildContext context){
+Widget userDrawer(BuildContext context, updateItems){
   return Drawer(
     child: ListView(
       padding: EdgeInsets.zero,
       children: [
         profilePicture(currentUser),
-        listAnItemButton(context, currentUser),
+        listAnItemButton(context, currentUser, updateItems),
         myListingsButton(context),
         logoutButton(context)
       ]
@@ -91,14 +101,14 @@ Widget profilePicture(User currentUser) {
   );
 }
 
-Widget listAnItemButton(BuildContext context, User currentUser) {
+Widget listAnItemButton(BuildContext context, User currentUser, updateItems) {
   return ListTile(
     title: Text('List an Item'),
     onTap: () {  
       Navigator.push<void>(
         context,
         MaterialPageRoute<void>(
-          builder: (BuildContext context) => ListItemScreen(),
+          builder: (BuildContext context) => ListItemScreen(updateItems: updateItems),
         ),
       );
     }

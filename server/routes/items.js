@@ -40,6 +40,28 @@ router.get("/", async (req, res) => {
   res.status(201).json(output);
 });
 
+//DON IS TRYING THIS GET AND IT MIGHT BE WRONG
+//Get all items listed by a given user
+router.get("/users/:user_id", async (req, res) => {
+  let listings = await db.getAllItems("items", null);
+  let allItems = [];
+
+  listings.Items.forEach((item) => {
+    allItems.push(aws.DynamoDB.Converter.unmarshall(item));
+  });
+
+  usersItems = []
+  for (var i = 0; i < allItems.length; i++){
+    if (allItems[i].seller_id === req.params.user_id){
+      usersItems.push(allItems[i])
+    }
+  }
+  console.log(usersItems);
+  res.status(201).json(usersItems);
+});
+////////////////////////////
+
+
 router.get("/:item_id", async (req, res) => {
   let item = await db.getItem("items", req.params.item_id);
   if (_.isUndefined(item.Item)) {
