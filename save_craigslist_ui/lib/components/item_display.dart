@@ -6,8 +6,9 @@ import '../screens/item_screen.dart';
 
 class ItemDisplay extends StatelessWidget {
   final Item item;
+  final void Function() updateItems;
 
-  const ItemDisplay({ Key? key, required this.item }) : super(key: key);
+  const ItemDisplay({ Key? key, required this.item, required this.updateItems}) : super(key: key);
 
   //Individual Display for each item
   //An item has id, title, description, seller_id, price, location, status, photos
@@ -19,7 +20,7 @@ class ItemDisplay extends StatelessWidget {
         Navigator.push<void>(
           context,
           MaterialPageRoute<void>(
-            builder: (BuildContext context) => ItemScreen(item: item),
+            builder: (BuildContext context) => ItemScreen(item: item, updateItems: updateItems),
           ),
         );
       },

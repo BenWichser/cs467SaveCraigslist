@@ -3,11 +3,13 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/item.dart';
 import '../server_url.dart';
+import '../account.dart';
 
 class ItemScreen extends StatelessWidget {
   final Item item;
+  final void Function() updateItems;
 
-  ItemScreen({ Key? key, required this.item}) : super(key: key);
+  ItemScreen({ Key? key, required this.item, required this.updateItems}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -20,12 +22,59 @@ class ItemScreen extends StatelessWidget {
             itemPhotos(item),
             itemInfo(item),
             itemDescription(item),
-            sellerSection(item)
+
+            //Either the seller info, or a delete button if the current user is the seller
+            item.seller_id != currentUser.id ? sellerSection(item) : deleteButton(item.id, context)
           ]
         )
       )
     );
   }
+
+  Widget deleteButton(itemId, context){
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () => showDialog(
+          context: context,
+          builder: (BuildContext context) => confirmDelete(itemId, context)),
+        child: Text('Delete Item')
+      )
+    );
+  }
+
+  Widget confirmDelete(itemId, context){
+    return AlertDialog(
+      content: Text('Are you sure you want to delete this item?'),
+      actions: [
+        TextButton(
+          onPressed: () {deleteItem(itemId, context);}, 
+          child: Text('Yes'),),
+        TextButton(
+          onPressed: () {Navigator.pop(context);},
+          child: Text('No')
+        )
+      ]  
+    );
+  }
+
+  void deleteItem(itemId, context) async {
+    var response = await http.delete(Uri.parse('${hostURL}:${port}/items/${itemId}'));
+    if(response.statusCode == 204){
+      final successBar = SnackBar(content: Text('Your item has been deleted.'));
+      ScaffoldMessenger.of(context).showSnackBar(successBar);
+    }
+    else {
+      final successBar = SnackBar(content: Text('Error deleting item. Please try again.'));
+      ScaffoldMessenger.of(context).showSnackBar(successBar);
+    };
+    
+    updateItems();
+    Navigator.pop(context);
+    Navigator.pop(context);
+  }
+
 }
 
 Widget itemPhotos(Item item){
@@ -136,8 +185,7 @@ Widget sellerPhotoAndName(item) {
                 dynamic sellerJSONString = snapshot.data;
                 Map sellerJSON = jsonDecode(sellerJSONString.body);
 
-                print("HERHERHERHERE");
-                debugPrint('${sellerJSON}', wrapWidth: 1024);
+                //debugPrint('${sellerJSON}', wrapWidth: 1024);
 
                 return CircleAvatar(
                   backgroundColor: Colors.black,
@@ -158,3 +206,5 @@ Widget sellerPhotoAndName(item) {
     Text(item.seller_id)]
   );
 }
+
+

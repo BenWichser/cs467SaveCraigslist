@@ -8,7 +8,9 @@ import '../components/square_text_field.dart';
 
 
 class ListItemScreen extends StatelessWidget {
-  const ListItemScreen({ Key? key }) : super(key: key);
+  final void Function() updateItems;
+
+  const ListItemScreen({ Key? key, required this.updateItems}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -27,14 +29,16 @@ class ListItemScreen extends StatelessWidget {
           ]
         )
       ),
-      body: ItemForm(),
+      body: ItemForm(updateItems: updateItems),
     );
   }
 }
 
 
 class ItemForm extends StatefulWidget {
-  const ItemForm({ Key? key }) : super(key: key);
+  final void Function() updateItems;
+
+  const ItemForm({ Key? key, required this.updateItems }) : super(key: key);
 
   @override
   _ItemFormState createState() => _ItemFormState();
@@ -42,6 +46,8 @@ class ItemForm extends StatefulWidget {
 
 class _ItemFormState extends State<ItemForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+
   
   void initState() {
     SystemChannels.textInput.invokeMethod('TextInput.hide');
@@ -84,6 +90,7 @@ class _ItemFormState extends State<ItemForm> {
                       titleController.text, 
                       priceController.text, 
                       descriptionController.text,
+                      widget.updateItems, 
                       context);
 
                     //Reset fields and hide keyboard
@@ -139,7 +146,7 @@ Widget PriceField(TextEditingController priceController){
   );   
 }
 
-void postItem(String title, String price, String description, BuildContext context) async {
+void postItem(String title, String price, String description, updateItems, BuildContext context) async {
     
   //NEED TO ADD PHOTOS AND LOCATION
   var newItem = {
@@ -156,6 +163,7 @@ void postItem(String title, String price, String description, BuildContext conte
       body: jsonEncode(newItem)
   );
 
+  updateItems();
   //If success display success message otherwise display error message. 
   if(response.statusCode == 201){
     final successBar = SnackBar(content: Text('Thank you for posting this item!'));
