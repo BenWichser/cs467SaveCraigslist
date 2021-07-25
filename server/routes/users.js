@@ -36,6 +36,7 @@ router.get("/:user_id", async (req, res) => {
     return res.status(404).json({ error: "This user doesn't exist" });
   } else {
     user = _.omit(aws.DynamoDB.Converter.unmarshall(user.Item), "password");
+    console.log(`Logged in user ${req.params.user_id}`);
     return res.status(200).json(user);
   }
 });
