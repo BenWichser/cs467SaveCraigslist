@@ -118,8 +118,25 @@ async function insertSampleData(tablename, entries) {
             "messages": messageTemplate
         };
         for(var field in entry)
-            params.Item[ [field] ]   = { 
+            if (field != 'recents') {
+            params.Item[field]   = { 
                 [templateSelector[[tablename]][field]]: entry[field]};
+            }
+        // Add recent messages
+        if (tablename  == 'users')
+        {
+            params.Item['recents'] = { 'L' : []};
+            for (var message of entry['recents']) 
+            {
+                params.Item['recents']['L'].push( 
+                    {'M': 
+                        {
+                            'recent_id': {'S': message['recent_id']}, 
+                            'message_id': {'S': message['message_id']}
+                        }
+                    });
+            }
+        }
         // redo password as hashed/salted password
         if ('password' in entry)
             params.Item.password = {

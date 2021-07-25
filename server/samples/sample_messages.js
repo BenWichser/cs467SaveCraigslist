@@ -20,6 +20,7 @@ const sampleMessageA = {
 const sampleMessageB = {
     id: 'sampleMessageB',
     sender_id: 'joebiden46',
+    receiver_id: 'jbutt',
     date_sent: '1626364830820',
     content: "You're welcome.  Back to work."
 }
@@ -44,7 +45,7 @@ const sampleMessageE = {
     id: 'sampleMessageE',
     sender_id: 'art',
     receiver_id: 'josephing_darakjy',
-    date_sent: '1626365089305',
+    date_sent: '1626365081000',
     content: "Helllo?  Are you hungry for Art's art?"
 }
 
@@ -52,7 +53,7 @@ const sampleMessageF = {
     id: 'sampleMessageF',
     sender_id: 'josephine_darakjy',
     receiver_id: 'art',
-    date_sent: '1626365081000',
+    date_sent: '1626365089305',
     content: "I'm afraid not.  I just had a salad with blue cheese dressing.  Good luck!"
 }
 
