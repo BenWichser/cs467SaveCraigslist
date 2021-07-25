@@ -5,6 +5,7 @@ const express = require("express"),
   aws = require("aws-sdk"),
   { v4: uuidv4 } = require("uuid"),
   _ = require("lodash"),
+  zip = require("zipcodes"),
   bodyParser = require("body-parser");
 const router = express.Router();
 
