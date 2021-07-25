@@ -4,6 +4,7 @@ const userTemplate = {
     'password': 'S',
     'photo': 'S',
     'zip': 'S',
+    'recents': 'L',
     'rating_buyer': 'N',
     'rating_seller': 'N',
     'items_bought': 'L',        // [ {'S': id }, ]
