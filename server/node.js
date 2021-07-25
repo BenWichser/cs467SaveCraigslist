@@ -4,6 +4,7 @@ const express = require("express"),
   users = require("./routes/users.js"),
   items = require("./routes/items.js"),
   messages = require("./routes/messages.js"),
+  generatePresignedURL = require("./routes/generatePresignedURL.js"),
   db = require("./function"),
   crypt = require("bcrypt"),
   _ = require("lodash"),
@@ -16,6 +17,7 @@ const hostname = "127.0.0.1";
 const port = process.env.port || 8080;
 const app = express();
 
+
 app.set("trust proxy", 1);
 
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -23,6 +25,7 @@ app.use(bodyParser.json());
 app.use("/users", users);
 app.use("/items", items);
 app.use("/messages", messages);
+app.use("/generatePresignedUrl", generatePresignedURL);
 
 app.use(
   session({
@@ -56,6 +59,7 @@ app.post(
       return res.status(400).json({ error: "Incorrect password" });
     }
     user = aws.DynamoDB.Converter.unmarshall(_.omit(user.Item, "password"));
+    console.log(`Logged in user ${req.body.username}`);
     return res.status(200).json(user);
   }
 );
@@ -68,3 +72,4 @@ app.post("/logout", customValidation.isLoggedIn, (req, res) => {
 app.listen(port, () => {
   console.log(`App listening at http://${hostname}:${port}`);
 });
+

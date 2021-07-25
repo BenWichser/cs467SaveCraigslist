@@ -8,6 +8,8 @@ const express = require("express"),
   bodyParser = require("body-parser");
 const router = express.Router();
 
+
+// Router routes
 router.use(bodyParser.json());
 
 router.post(
@@ -100,5 +102,7 @@ router.delete(
     res.status(204).send();
   }
 );
+
+
 
 module.exports = router;
