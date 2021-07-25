@@ -88,12 +88,11 @@ class _ItemFormState extends State<ItemForm> {
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
                           /* ***************************
-                    Need to add photos, get seller_id and location from current user
+                          Need to add photos, get seller_id and location from current user
 
-                    ***************************** */
+                          ***************************** */
 
-                          postItem(titleController.text, priceController.text,
-                              descriptionController.text, imagePath, context);
+                          postItem(titleController.text, priceController.text, descriptionController.text, imagePath, widget.updateItems, context);
 
                           //Reset fields and hide keyboard
                           _formKey.currentState?.reset();
@@ -215,8 +214,7 @@ Widget PriceField(TextEditingController priceController) {
 }
 
 
-void postItem(String title, String price, String description, var imagePath, updateItems
-    BuildContext context) async {
+void postItem(String title, String price, String description, var imagePath, updateItems, BuildContext context) async {
   var photoslist = [];
   try {
     if (imagePath != null) {
@@ -239,30 +237,25 @@ void postItem(String title, String price, String description, var imagePath, upd
       'status': 'For Sale',
       'photos': photoslist
     };
+
     var response = await http.post(Uri.parse('${hostURL}:${port}/items'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(newItem));
+
     //If success display success message otherwise display error message.
     if (response.statusCode == 201) {
-      final successBar =
-          SnackBar(content: Text('Thank you for posting this item!'));
+      final successBar = SnackBar(content: Text('Thank you for posting this item!'));
       ScaffoldMessenger.of(context).showSnackBar(successBar);
-    } else {
-      final successBar =
-          SnackBar(content: Text('Error posting item. Please try again.'));
+      updateItems();
+    } 
+    else {
+      final successBar = SnackBar(content: Text('Error posting item. Please try again.'));
       ScaffoldMessenger.of(context).showSnackBar(successBar);
     }
-  } catch (e) {
+  } 
+  catch (e) {
     print('Error posting item -- ${e}');
-    final successBar =
-        SnackBar(content: Text('Error posting item. Please try again.'));
-  }
-}
-
-  updateItems();
-  //If success display success message otherwise display error message. 
-  if(response.statusCode == 201){
-    final successBar = SnackBar(content: Text('Thank you for posting this item!'));
+    final successBar = SnackBar(content: Text('Error posting item. Please try again.'));
     ScaffoldMessenger.of(context).showSnackBar(successBar);
   }
 }
@@ -270,7 +263,8 @@ void postItem(String title, String price, String description, var imagePath, upd
 bool isValidPrice(String value) {
   try {
     double.parse(value);
-  } on FormatException {
+  } 
+  on FormatException {
     return false;
   }
 
