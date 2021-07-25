@@ -42,6 +42,16 @@ router.get("/", async (req, res) => {
   res.status(201).json(output);
 });
 
+router.get("/users/:user_id", async (req, res)=> {
+  let listings = await db.getAllUserItems(req.params.user_id, null);
+  let output = [];
+
+  listings.Items.forEach((item)=>{
+    output.push(aws.DynamoDB.Converter.unmarshall(item));
+  });
+  res.status(201).json(output);
+})
+
 router.get("/:item_id", async (req, res) => {
   let item = await db.getItem("items", req.params.item_id);
   if (_.isUndefined(item.Item)) {

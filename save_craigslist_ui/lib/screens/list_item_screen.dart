@@ -14,7 +14,10 @@ import './aws/generate_image_url.dart';
 import './aws/upload_file.dart';
 
 class ListItemScreen extends StatelessWidget {
-  const ListItemScreen({Key? key}) : super(key: key);
+
+  final void Function() updateItems;
+
+  const ListItemScreen({ Key? key, required this.updateItems}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -29,14 +32,18 @@ class ListItemScreen extends StatelessWidget {
         Padding(
             padding: EdgeInsets.symmetric(horizontal: 10),
             child: Text(currentUser.id))
-      ])),
-      body: ItemForm(),
+          ]
+        )
+      ),
+      body: ItemForm(updateItems: updateItems),
     );
   }
 }
 
 class ItemForm extends StatefulWidget {
-  const ItemForm({Key? key}) : super(key: key);
+  final void Function() updateItems;
+
+  const ItemForm({ Key? key, required this.updateItems }) : super(key: key);
 
   @override
   _ItemFormState createState() => _ItemFormState();
@@ -45,9 +52,11 @@ class ItemForm extends StatefulWidget {
 class _ItemFormState extends State<ItemForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+
   final picker = ImagePicker();
   var imagePath = null;
   var imageFile = null;
+
 
   void initState() {
     SystemChannels.textInput.invokeMethod('TextInput.hide');
@@ -82,6 +91,7 @@ class _ItemFormState extends State<ItemForm> {
                     Need to add photos, get seller_id and location from current user
 
                     ***************************** */
+
                           postItem(titleController.text, priceController.text,
                               descriptionController.text, imagePath, context);
 
@@ -94,7 +104,9 @@ class _ItemFormState extends State<ItemForm> {
                       child: const Text('Post Item!'),
                     ))
               ],
-            )));
+            )
+        )
+    );
   }
 
   Widget GetPhoto() {
@@ -139,7 +151,9 @@ class _ItemFormState extends State<ItemForm> {
                       File(imagePath),
                       fit: BoxFit.cover,
                     ),
-                  )));
+                  )
+        )
+    );
   }
 
   _getFromGallery() async {
@@ -149,6 +163,7 @@ class _ItemFormState extends State<ItemForm> {
       source: ImageSource.gallery,
       maxWidth: 1800,
       maxHeight: 1800,
+
     );
     print('-Path: ${pickedFile?.path}');
     if (pickedFile != null) {
@@ -199,9 +214,9 @@ Widget PriceField(TextEditingController priceController) {
               })));
 }
 
-void postItem(String title, String price, String description, var imagePath,
+
+void postItem(String title, String price, String description, var imagePath, updateItems
     BuildContext context) async {
-  //NEED TO ADD PHOTOS AND LOCATION
   var photoslist = [];
   try {
     if (imagePath != null) {
@@ -241,6 +256,13 @@ void postItem(String title, String price, String description, var imagePath,
     print('Error posting item -- ${e}');
     final successBar =
         SnackBar(content: Text('Error posting item. Please try again.'));
+  }
+}
+
+  updateItems();
+  //If success display success message otherwise display error message. 
+  if(response.statusCode == 201){
+    final successBar = SnackBar(content: Text('Thank you for posting this item!'));
     ScaffoldMessenger.of(context).showSnackBar(successBar);
   }
 }
