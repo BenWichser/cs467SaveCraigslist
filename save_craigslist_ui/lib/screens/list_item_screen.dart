@@ -83,7 +83,7 @@ class _ItemFormState extends State<ItemForm> {
 
                     ***************************** */
                           postItem(titleController.text, priceController.text,
-                              descriptionController.text, imageFile, context);
+                              descriptionController.text, imagePath, context);
 
                           //Reset fields and hide keyboard
                           _formKey.currentState?.reset();
@@ -199,19 +199,21 @@ Widget PriceField(TextEditingController priceController) {
               })));
 }
 
-void postItem(String title, String price, String description, XFile imageFile,
+void postItem(String title, String price, String description, var imagePath,
     BuildContext context) async {
   //NEED TO ADD PHOTOS AND LOCATION
+  var photoslist = [];
   try {
-    // Get s3 location for image
-    Map urlInfo = await generateImageURL(imageFile);
-    // Send file to s3 location
-    print('We will use this URL for uploading: ${urlInfo['uploadUrl']}');
-    await uploadFile(urlInfo['uploadUrl'], imageFile);
-    // create photos entry
-    var photoslist = [Map()];
-    photoslist[0]['caption'] = "No Caption";
-    photoslist[0]['URL'] = urlInfo['fileName'];
+    if (imagePath != null) {
+      // Get s3 location for image
+      Map urlInfo = await generateImageURL(XFile(imagePath));
+      // Send file to s3 location
+      await uploadFile(urlInfo['uploadUrl'], XFile(imagePath));
+      // create photos entry
+      photoslist = [
+        {'caption': 'No Caption', 'URL': urlInfo['fileName']}
+      ];
+    }
     // create entire post json
     var newItem = {
       'title': title,
@@ -222,7 +224,6 @@ void postItem(String title, String price, String description, XFile imageFile,
       'status': 'For Sale',
       'photos': photoslist
     };
-    print('${newItem} heading to DynamoDB');
     var response = await http.post(Uri.parse('${hostURL}:${port}/items'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(newItem));
