@@ -34,7 +34,7 @@ router.post(
 );
 
 router.get("/", async (req, res) => {
-  let listings = await db.getAllItems("items", null);
+  let listings = await db.getNumItems("items", 10, null, true);
   let output = [];
 
   listings.Items.forEach((item) => {

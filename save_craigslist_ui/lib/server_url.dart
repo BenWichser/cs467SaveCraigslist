@@ -1,4 +1,4 @@
-const hostURL = 'http://10.0.2.2';
+const hostURL = 'http://localhost';
 
 const port = '8080';
 
