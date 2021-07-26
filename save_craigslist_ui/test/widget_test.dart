@@ -9,11 +9,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:save_craigslist_ui/main.dart';
+import '../lib/app.dart'; // imported to enable use of App below
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(MyApp());
+    /* Changed from MyApp to App to remove errors, and subsequent red-underlining
+        from VSCode.
+        */
+    await tester.pumpWidget(App());
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

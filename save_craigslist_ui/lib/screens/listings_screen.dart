@@ -8,15 +8,13 @@ import '../server_url.dart';
 class ListingsScreen extends StatefulWidget {
   final void Function() updateItems;
 
-  const ListingsScreen({ Key? key, required this.updateItems }) : super(key: key);
+  const ListingsScreen({Key? key, required this.updateItems}) : super(key: key);
 
   @override
   _ListingsScreenState createState() => _ListingsScreenState();
 }
 
-
 class _ListingsScreenState extends State<ListingsScreen> {
-  
   @override
   Widget build(BuildContext context) {
     //We get the list of every item in the database as a future. The futurebuilder checks
@@ -24,72 +22,65 @@ class _ListingsScreenState extends State<ListingsScreen> {
     //and returns the list in a Listview.
 
     return Scaffold(
-      body: FutureBuilder(
-        future: http.get(Uri.parse('${hostURL}:${port}/items')), 
-        builder: (context, snapshot) {
-          if (snapshot.hasData){
-            dynamic jsonList = snapshot.data;
-            //debugPrint(jsonList.body, wrapWidth: 1024);
-            List<Item> itemList = convertFromJSONToItemList(jsonDecode(jsonList.body));
-            List<ItemDisplay> itemDisplays = createListOfItemDisplays(itemList, widget.updateItems);
-            return ListView(children: itemDisplays);
-          }
-          else if (snapshot.hasError){
-            return Text('Error loading items'); 
-          }
-          else {
-            //Spinny wheel while the data loads
-            return Center(child: CircularProgressIndicator()); 
-          }
-        }
-      )
-    ); 
+        body: FutureBuilder(
+            future: http.get(Uri.parse('${hostURL}:${port}/items')),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                dynamic jsonList = snapshot.data;
+                //debugPrint(jsonList.body, wrapWidth: 1024);
+                List<Item> itemList =
+                    convertFromJSONToItemList(jsonDecode(jsonList.body));
+                List<ItemDisplay> itemDisplays =
+                    createListOfItemDisplays(itemList, widget.updateItems);
+                return ListView(children: itemDisplays);
+              } else if (snapshot.hasError) {
+                return Text('Error loading items');
+              } else {
+                //Spinny wheel while the data loads
+                return Center(child: CircularProgressIndicator());
+              }
+            }));
   }
 }
 
-
-List<Item> convertFromJSONToItemList(List<dynamic> JSONItems){
+List<Item> convertFromJSONToItemList(List<dynamic> JSONItems) {
   List<Item> items = [];
 
-  for (Map item in JSONItems){
-
-    if(item.containsKey('photos') && item['photos'].length != 0)
-    {
+  for (Map item in JSONItems) {
+    if (item.containsKey('photos') && item['photos'].length != 0) {
       Item newItem = Item(
-      id: item['id'],  
-      title: item['title'],
-      description: item['description'],
-      seller_id: item['seller_id'],
-      price: item['price'].toDouble(),
-      location: item['location'],
-      photos: item['photos']
+          id: item['id'],
+          title: item['title'],
+          description: item['description'],
+          seller_id: item['seller_id'],
+          price: item['price'].toDouble(),
+          location: item['location'],
+          photos: item['photos']);
+
+      items.add(newItem);
+    } else {
+      Item newItem = Item(
+        id: item['id'],
+        title: item['title'],
+        description: item['description'],
+        seller_id: item['seller_id'],
+        price: item['price'].toDouble(),
+        location: item['location'],
       );
 
       items.add(newItem);
     }
-    else{
-      Item newItem = Item(
-      id: item['id'],  
-      title: item['title'],
-      description: item['description'],
-      seller_id: item['seller_id'],
-      price: item['price'].toDouble(),
-      location: item['location'],
-      );
-
-      items.add(newItem);
-    }
-
   }
 
   return items;
 }
 
-List<ItemDisplay> createListOfItemDisplays(List<Item> items, updateItems){
+List<ItemDisplay> createListOfItemDisplays(List<Item> items, updateItems) {
   List<ItemDisplay> displayableItems = [];
 
-  for(Item item in items){
-    ItemDisplay displayableItem = ItemDisplay(item: item, updateItems: updateItems);
+  for (Item item in items) {
+    ItemDisplay displayableItem =
+        ItemDisplay(item: item, updateItems: updateItems);
     displayableItems.add(displayableItem);
   }
 

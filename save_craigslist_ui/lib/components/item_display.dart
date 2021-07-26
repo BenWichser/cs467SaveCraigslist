@@ -8,7 +8,8 @@ class ItemDisplay extends StatelessWidget {
   final Item item;
   final void Function() updateItems;
 
-  const ItemDisplay({ Key? key, required this.item, required this.updateItems}) : super(key: key);
+  const ItemDisplay({Key? key, required this.item, required this.updateItems})
+      : super(key: key);
 
   //Individual Display for each item
   //An item has id, title, description, seller_id, price, location, status, photos
@@ -16,42 +17,40 @@ class ItemDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {  
-        Navigator.push<void>(
-          context,
-          MaterialPageRoute<void>(
-            builder: (BuildContext context) => ItemScreen(item: item, updateItems: updateItems),
-          ),
-        );
-      },
-      child: Container( 
-        padding: EdgeInsets.all(15.0),
-        width: double.infinity,
-        decoration: BoxDecoration(border: Border(bottom: BorderSide(width: 1.0, color: Colors.black))),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Image(
-              image: NetworkImage('${s3ItemPrefix}${item.photos![0]['URL']}'),
-              height: 50,
-              width: 50,
-              fit: BoxFit.cover
+        onTap: () {
+          Navigator.push<void>(
+            context,
+            MaterialPageRoute<void>(
+              builder: (BuildContext context) =>
+                  ItemScreen(item: item, updateItems: updateItems),
             ),
-            //Placeholder(
-            //  fallbackHeight: 50,
-            //  fallbackWidth: 50
-            //),
-            Padding(
-              padding: EdgeInsets.all(10), 
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.title),
-                  Text('\$${item.price}')
-                ])
-            )
-          ])
-      )
-    );
+          );
+        },
+        child: Container(
+            padding: EdgeInsets.all(15.0),
+            width: double.infinity,
+            decoration: BoxDecoration(
+                border: Border(
+                    bottom: BorderSide(width: 1.0, color: Colors.black))),
+            child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [
+              Image(
+                  image:
+                      NetworkImage('${s3ItemPrefix}${item.photos![0]['URL']}'),
+                  height: 50,
+                  width: 50,
+                  fit: BoxFit.cover),
+              //Placeholder(
+              //  fallbackHeight: 50,
+              //  fallbackWidth: 50
+              //),
+              Padding(
+                  padding: EdgeInsets.all(10),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(item.title),
+                        Text('\$${item.price.toStringAsFixed(2)}')
+                      ]))
+            ])));
   }
 }
