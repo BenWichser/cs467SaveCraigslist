@@ -9,6 +9,30 @@ const express = require("express"),
   bodyParser = require("body-parser");
 const router = express.Router();
 
+// Functions
+function itemPostTagEnhancer(body) {
+  /* itemPostTagEnhancer
+  * Scans title for useable tags, and adds them to body's tag array
+  * Accepts:
+  *   body (Object):  Object from item post
+  * Returns:
+  *   Null.  Alters `body['tags']`.
+  */
+ // make new array based on any tags already there
+ const improvedTags = body.hasOwnProperty('tags') ? body['tags'] : [];
+ // add every word from title into array
+ const titleArray = body['title'].split(' ');
+ for (let word of titleArray)
+ {
+   // need language to remove common words as well as possessive punctuation?  Other punctuation within words?
+   if (!improvedTags.includes(word.toLowerCase()))
+   {
+     improvedTags.push(word.toLowerCase());
+   }
+ }
+ body['tags'] = improvedTags;
+ console.log(`Improved Tags: ${body['tags']}`);
+}
 
 // Router routes
 router.use(bodyParser.json());
@@ -26,6 +50,7 @@ router.post(
   //customValidation.isLoggedIn,
   customValidation.validate,
   (req, res) => {
+    itemPostTagEnhancer(req.body);
     let new_id = uuidv4();
     let new_item = _.extend(req.body, { id: new_id });
     db.createItem("items", aws.DynamoDB.Converter.marshall(new_item));
