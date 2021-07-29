@@ -8,6 +8,23 @@ const express = require("express"),
   bodyParser = require("body-parser");
 const router = express.Router();
 
+// Function
+function makeListingsOutput(obj) {
+  /* makeListingsOutput
+   * Takes an array of items from DynamoDB and creates an appropriate array
+   *  suitable for sharing with front end.
+   * Accepts:
+   *  obj (Object): DynamodDB return object with items array in it.
+   * Returns:
+   *  List of items converted via marshall
+   */
+  let output = [];
+  obj['Items'].forEach( function (item) {
+    output.push(aws.DynamoDB.Converter.unmarshall(item)
+  )});
+  return output;
+}
+
 
 // Router routes
 router.use(bodyParser.json());
@@ -34,24 +51,27 @@ router.post(
 
 router.get("/", async (req, res) => {
   var zip = 'location' in req.body ? String(req.body.location) : '02134';
-  console.log(`Request: ${JSON.stringify(req.body)}`);
-  let listings = await db.getOpeningItemList(zip, 10);
-  let output = [];
+  try {
+    let listings = await db.getOpeningItemList(zip, 10);
+    res.status(201).json(makeListingsOutput(listings));
+  } catch (err) {
+    console.log(`Error getting opening item list: ${err}`);
+  }
+});
 
-  listings.Items.forEach((item) => {
-    output.push(aws.DynamoDB.Converter.unmarshall(item));
-  });
-  res.status(201).json(output);
+router.get("/search", async(req, res) => {
+  // Route for search from user
+  try {
+    let listings = await db.getSearchItems(req.body);
+    res.status(201).json(makeListingsOutput(listings));
+  } catch (err) {
+    console.log(`Error getting search item list: ${err}`);
+  }
 });
 
 router.get("/users/:user_id", async (req, res)=> {
   let listings = await db.getAllUserItems(req.params.user_id, null);
-  let output = [];
-
-  listings.Items.forEach((item)=>{
-    output.push(aws.DynamoDB.Converter.unmarshall(item));
-  });
-  res.status(201).json(output);
+  res.status(201).json(makeListingsOutput(listings));
 })
 
 router.get("/:item_id", async (req, res) => {

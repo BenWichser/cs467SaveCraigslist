@@ -114,10 +114,8 @@ function addDistanceToUser(location, data) {
    *  None. Alters `data` to include `distance`: key value in each member
    */
   data['Items'].forEach( function(item) {
-    console.log(`Distance for this item at location ${item['location']['S']}: ${zipcodes.distance(location, item['location']['S'])}`)
     item['distance'] = {'N': zipcodes.distance(location, item['location']['S'])};
   });
-  console.log(JSON.stringify(data));
   return data;
 }
 
@@ -134,12 +132,29 @@ async function getOpeningItemList(location, num) {
    */
   try {
     const returnItems = await getNumItems(num, null, true);
-    console.log(returnItems);
     await addDistanceToUser(location, returnItems);
     return returnItems;
   } catch (err) {
     console.log(`Error getting opening item list: ${err}`);
   }
+}
+
+async function getSearchItems(body) {
+  /* getSearchItemList
+   * Gets a DynamoDB return object containing search items.
+   * Accepts:
+   *  body (Ojbect): Request body
+   *  Returns:
+   *  Object from DynamoDB
+   */
+  console.log(`Entering getSearchItems`);
+  // Create search object information
+  const location = 'location' in body ? String(body.location) : '70116';
+  console.log(`Location: ${locaiton}`);
+  // default distance is 50 miles
+  const distance = 'radius' in body ? Number(body.radius) : 50;
+  // NEED OTHER PR APPROVED SO I CAN USE TAGS LOGIC
+  // Get all items that meet this specification
 }
 
 
@@ -212,6 +227,7 @@ module.exports = {
   deleteItem,
   getNumItems,
   getOpeningItemList,
+  getSearchItems,
   hashPassword,
   updateItem,
   queryMessages,
