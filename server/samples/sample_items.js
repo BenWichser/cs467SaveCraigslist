@@ -146,6 +146,7 @@ const sampleItemF = {
     seller_id: 'veryCloseSeller',
     price: '0.50',
     location: '70113',
+    status: 'For Sale',
     photos: [],
     tags: [
         {'S': 'very'},
@@ -163,6 +164,7 @@ const sampleItemG = {
     seller_id: 'closeSeller',
     price: '1',
     location: '70002',
+    status: 'For Sale',
     photos: [],
     tags: [
         { 'S': 'close'},
@@ -179,6 +181,7 @@ const sampleItemH = {
     seller_id: 'nearbySeller',
     price: '20',
     location: '70031',
+    status: 'For Sale',
     photos: [],
     tags: [
         {'S': 'nearby'},
@@ -195,6 +198,7 @@ const sampleItemI = {
     seller_id: 'notFarSeller',
     price: '50',
     location: '39466',
+    status: 'For Sale',
     photos: [],
     tags: [
         {'S': 'far'},
@@ -211,6 +215,7 @@ const sampleItemJ = {
     seller_id: 'farSeller',
     price: '100',
     location: '39404',
+    status: 'For Sale',
     photos: [],
     tags: [
         {'S': 'far'},
@@ -226,6 +231,7 @@ const sampleItemK = {
     description: 'This item is very far from you.',
     seller_id: 'veryFarSeller',
     location: '10001',
+    status: 'For Sale',
     price: '25',
     photos: [],
     tags: [
