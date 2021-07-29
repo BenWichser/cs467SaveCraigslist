@@ -109,6 +109,7 @@ router.get("/", async (req, res) => {
   }
 });
 
+
 router.get("/search", async(req, res) => {
   // Route for search from user
   try {

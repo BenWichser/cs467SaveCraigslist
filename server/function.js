@@ -139,6 +139,7 @@ async function getOpeningItemList(location, num) {
   }
 }
 
+
 async function getSearchItems(body) {
   /* getSearchItemList
    * Gets a DynamoDB return object containing search items.
