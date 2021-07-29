@@ -12,6 +12,7 @@ var {
 var { ddbClient } = require("./libs/ddbClient.js");
 const crypt = require("bcrypt");
 const _ = require("lodash");
+var zipcodes = require("zipcodes");
 
 async function hashPassword(password) {
   const salt = await crypt.genSalt(10);
@@ -73,16 +74,15 @@ async function getItem(datatype, id) {
   }
 }
 
-async function getNumItems(datatype, num, lastEval, forSale = true) {
-  // getNumItems takes the table name and lastEvaluatedItem and sends a
-  // ScanCommand to pull 10 entries from the table starting with that item
-  // datatype: String (One of: "users", "messages", "items")
+async function getNumItems(num, lastEval, forSale = true) {
+  // getNumItems take the number of items desired and lastEvaluatedItem and sends a
+  // ScanCommand to pull `num` entries from the table starting with that item
   // num: Int (number of items to be asked for)
   // lastEval: Object (KEY, Returned from prior Scan, Can be Null)
   // forSale: bool - Must items be for sale
   // NOTE: Scan is very inefficient and costly - we should work to minimize
     const params = {
-        TableName: datatype,
+        TableName: 'items',
         IndexName: 'status-location-index',
         Limit: num,
         ExclusiveStartKey: lastEval,
@@ -102,6 +102,46 @@ async function getNumItems(datatype, num, lastEval, forSale = true) {
         console.log(err);
       }
 }
+
+function addDistanceToUser(location, data) {
+  /* addDistanceToUser
+   * Takes a list of JSON objects, from DynamoDB, and adds a key:value pair, representing
+   *  distance to the user.
+   * Accepts:
+   *  locaiton (string): Current location
+   *  data (list of JSON): data representing an entry in "items" table
+   * Returns:
+   *  None. Alters `data` to include `distance`: key value in each member
+   */
+  data['Items'].forEach( function(item) {
+    console.log(`Distance for this item at location ${item['location']['S']}: ${zipcodes.distance(location, item['location']['S'])}`)
+    item['distance'] = {'N': zipcodes.distance(location, item['location']['S'])};
+  });
+  console.log(JSON.stringify(data));
+  return data;
+}
+
+async function getOpeningItemList(location, num) {
+  /* openingItemList 
+   * Uses getNumItems to get the opening screen list of items, including distance to user
+   * Currently:
+   *  10 ITEMS WITH NO TAG RELEVANCE SEARCH
+   * Accepts:
+   *  locaiton (String): Location for distance comparison
+   *  num (int): Maximum number of items to return
+   * Returns:
+   *  JSON of DynamoDB items for user by default when they open the app.
+   */
+  try {
+    const returnItems = await getNumItems(num, null, true);
+    console.log(returnItems);
+    await addDistanceToUser(location, returnItems);
+    return returnItems;
+  } catch (err) {
+    console.log(`Error getting opening item list: ${err}`);
+  }
+}
+
 
 async function getAllUserItems(userId, lastEval) {
   const params = {
@@ -171,6 +211,7 @@ module.exports = {
   getItem,
   deleteItem,
   getNumItems,
+  getOpeningItemList,
   hashPassword,
   updateItem,
   queryMessages,

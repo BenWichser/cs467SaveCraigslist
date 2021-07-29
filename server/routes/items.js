@@ -5,7 +5,6 @@ const express = require("express"),
   aws = require("aws-sdk"),
   { v4: uuidv4 } = require("uuid"),
   _ = require("lodash"),
-  zip = require("zipcodes"),
   bodyParser = require("body-parser");
 const router = express.Router();
 
@@ -34,7 +33,9 @@ router.post(
 );
 
 router.get("/", async (req, res) => {
-  let listings = await db.getNumItems("items", 10, null, true);
+  var zip = 'location' in req.body ? String(req.body.location) : '02134';
+  console.log(`Request: ${JSON.stringify(req.body)}`);
+  let listings = await db.getOpeningItemList(zip, 10);
   let output = [];
 
   listings.Items.forEach((item) => {

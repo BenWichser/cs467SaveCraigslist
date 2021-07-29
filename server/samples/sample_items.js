@@ -119,11 +119,133 @@ const sampleItemD = {
     ]
 };
 
+const sampleItemE = {
+    // item that is 1 mile from jbutt
+    id: 'sampleItemE',
+    date_added: '1627534156871',
+    title: 'Neighbor Item',
+    description: 'Item for sale from your nearest neighbor',
+    seller_id: 'neighborSeller',
+    price: '0.25',
+    location: '70146',
+    status: 'For Sale',
+    photos: [
+    ],
+    tags: [
+        {'S': 'neighbor'},
+        {'S': 'item'}
+    ]
+};
+
+const sampleItemF = {
+    // item that is 2 miles from jbutt
+    id: 'sampleItemF',
+    date_added: '1627534734106',
+    title: 'Very Close Item',
+    description: 'Item for sale from a very close neighbor',
+    seller_id: 'veryCloseSeller',
+    price: '0.50',
+    location: '70113',
+    photos: [],
+    tags: [
+        {'S': 'very'},
+        {'S': 'close'},
+        {'S': 'item'}
+    ]
+};
+
+const sampleItemG = {
+    // item that is 7 miles from jbutt
+    id: 'sampleItemG',
+    date_added: '1627535147765',
+    title: 'Close Item',
+    description: 'Item for sale from a close neighbor',
+    seller_id: 'closeSeller',
+    price: '1',
+    location: '70002',
+    photos: [],
+    tags: [
+        { 'S': 'close'},
+        { 'S': 'item'}
+    ]
+};
+
+const sampleItemH = {
+    // item that is 14 miles from jbutt
+    id: 'sampleItemH',
+    date_added: '1627535743914',
+    title: 'Nearby Item',
+    description: 'Item that isn\'t quite close, but is nearby',
+    seller_id: 'nearbySeller',
+    price: '20',
+    location: '70031',
+    photos: [],
+    tags: [
+        {'S': 'nearby'},
+        {'S': 'item'}
+    ]
+};
+
+const sampleItemI = {
+    // item that is 45 miles from jbutt
+    id: 'sampleItemI',
+    date_added: '1627536987393',
+    title: 'Not Far Item',
+    description: 'It is a bit of a drive, but this item isn\'t too far',
+    seller_id: 'notFarSeller',
+    price: '50',
+    location: '39466',
+    photos: [],
+    tags: [
+        {'S': 'far'},
+        {'S': 'item'}
+    ]
+};
+
+const sampleItemJ = {
+    // item that is 95 miles from jbutt
+    id: 'sampleItemJ',
+    date_added: '1627537258098',
+    title: 'Far Item',
+    description: 'This item is far from you. Day trip?',
+    seller_id: 'farSeller',
+    price: '100',
+    location: '39404',
+    photos: [],
+    tags: [
+        {'S': 'far'},
+        {'S': 'item'}
+    ]
+};
+
+const sampleItemK = {
+    // item that is 1169 miles from jbutt
+    id: 'sampleItemK',
+    date_added: '1627539165241',
+    title: 'Very Far Item',
+    description: 'This item is very far from you.',
+    seller_id: 'veryFarSeller',
+    location: '10001',
+    price: '25',
+    photos: [],
+    tags: [
+        { 'S': 'very'},
+        { 'S': 'far' },
+        { 'S': 'item'}
+    ]
+}
 
 const sampleItems = [
     sampleItemA,
     sampleItemB,
     sampleItemC,
-    sampleItemD
+    sampleItemD,
+    sampleItemE,
+    sampleItemF,
+    sampleItemG,
+    sampleItemH,
+    sampleItemI,
+    sampleItemJ,
+    sampleItemK
 ]
 module.exports = {sampleItems};
