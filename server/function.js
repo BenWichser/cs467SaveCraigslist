@@ -73,23 +73,34 @@ async function getItem(datatype, id) {
   }
 }
 
-async function getAllItems(datatype, lastEval) {
-  // getAllItems takes the table name and lastEvaluatedItem and sends a
+async function getNumItems(datatype, num, lastEval, forSale = true) {
+  // getNumItems takes the table name and lastEvaluatedItem and sends a
   // ScanCommand to pull 10 entries from the table starting with that item
   // datatype: String (One of: "users", "messages", "items")
+  // num: Int (number of items to be asked for)
   // lastEval: Object (KEY, Returned from prior Scan, Can be Null)
+  // forSale: bool - Must items be for sale
   // NOTE: Scan is very inefficient and costly - we should work to minimize
-  const params = {
-    TableName: datatype,
-    Limit: 10,
-    ExclusiveStartKey: lastEval,
-  };
-  try {
-    const action = await ddbClient.send(new ScanCommand(params));
-    return action;
-  } catch (err) {
-    console.log(err);
-  }
+    const params = {
+        TableName: datatype,
+        IndexName: 'status-location-index',
+        Limit: num,
+        ExclusiveStartKey: lastEval,
+          };
+    if (forSale) 
+    {
+            params["KeyConditionExpression"] = "#s = :s";
+            params["ExpressionAttributeNames"] = {"#s": "status"};
+            params["ExpressionAttributeValues"] = {
+                ":s": {S: "For Sale"}
+            };
+    }
+      try {
+            const action = await ddbClient.send(new QueryCommand(params));
+            return action;
+      } catch (err) {
+        console.log(err);
+      }
 }
 
 async function getAllUserItems(userId, lastEval) {
@@ -159,7 +170,7 @@ module.exports = {
   createItem,
   getItem,
   deleteItem,
-  getAllItems,
+  getNumItems,
   hashPassword,
   updateItem,
   queryMessages,
