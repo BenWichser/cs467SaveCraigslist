@@ -6,9 +6,56 @@ const express = require("express"),
   { v4: uuidv4 } = require("uuid"),
   _ = require("lodash"),
   zip = require("zipcodes"),
-  bodyParser = require("body-parser");
+  bodyParser = require("body-parser"),
+  stopwords = require("stopword");
+
 const router = express.Router();
 
+
+// Functions
+function itemPostTagEnhancer(body) {
+  /* itemPostTagEnhancer
+  * Scans title for useable tags, and adds them to body's tag array
+  * Accepts:
+  *   body (Object):  Object from item post
+  * Returns:
+  *   Null.  Alters `body['tags']`.
+  */
+ // make new array based on any tags already there
+  let improvedTags = body.hasOwnProperty('tags') ? body['tags'] : [];
+  // remove punctuation from both title and tags, in that order -- 
+  // Not entirely sure ALL punctuation removal is best
+  // var punctuation = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~';
+  var regex = new RegExp(/[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,\-.\/:;<=>?@\[\]^_`{|}~]/, 'g');
+  const noPunctuationTitle = body['title'].replace(regex, ' ');
+  // any entered tags are made to be a string and then reformed into list
+  //  after punctuation is removed.  This is to make sure the list is only
+  //  of single words
+  improvedTags = improvedTags.join(' ').replace(regex, ' ').split(' ');
+  // change all current tag words to lower case
+  if (improvedTags.length > 0)
+    improvedTags.forEach( (name, index) => improvedTags[index] = name.toLowerCase());
+  // add every title word that isn't alreadya tag into tag array
+  const titleArray = noPunctuationTitle.split(' ');
+  for (let word of titleArray)
+  {
+    if (!improvedTags.includes(word.toLowerCase()))
+    {
+      improvedTags.push(word.toLowerCase());
+    }
+  }
+  // remove common words, as well as trailing 's' and 't' from contractions/possessive
+  improvedTags = stopwords.removeStopwords(improvedTags, [...stopwords.en, ...['s', 't']]);
+  // quick convert to set and back to remove duplicates
+  improvedTags = [ ...new Set(improvedTags)];
+  // remove empty strings
+  improvedTags = improvedTags.filter( function(ele) {
+    return  ele != '';
+  }
+  );
+  // fix the body (ody ody ody) 'tags' value
+  body['tags'] = improvedTags;
+}
 
 // Router routes
 router.use(bodyParser.json());
@@ -26,6 +73,7 @@ router.post(
   //customValidation.isLoggedIn,
   customValidation.validate,
   (req, res) => {
+    itemPostTagEnhancer(req.body);
     let new_id = uuidv4();
     let new_item = _.extend(req.body, { id: new_id });
     db.createItem("items", aws.DynamoDB.Converter.marshall(new_item));
@@ -105,5 +153,52 @@ router.delete(
 );
 
 
+// TEST FUNCTION
+var testItemPostTagEnhancer = function () {
+  const bodies = [ 
+    { 
+      'title': ''
+    },
+    { 
+      'tags' : [],
+      'title': 'Goonies never say die'
+    },
+    { 
+      'tags' : 'the quick fox jumped over the lazy dog.'.split(' '),
+      'title': 'dog bowl'
+    },
+    { 
+      'tags' : 'The Quick Fox JUMPED OVER THE LAZY DOG'.split(' '),
+      'title': 'DOG boWl'
+    },
+    { 
+      'tags' : 'The Quick Fox JUMPED OVER THE LAZY DOG The Quick Fox JUMPED OVER THE LAZY DOG'.split(' '),
+      'title': 'DOG boWl'
+    },
+    {
+      'tags': 'She sells Sally\'s sea shells by the SEA-SHORE'.split(' '),
+      'title': 'Sally: biography of an entrepreneur-mermaid'
+    },
+    {
+      'tags': 'Waterfall -- Sally\'s favourite!'.split(' '),
+      'title': 'Waterfall -- Sally\'s favourite!'
+    }
+   ];
+  console.log("Testing itemPostTagEnhancer:");
+  bodies.forEach( function(body)
+  {
+    var preTags = body.hasOwnProperty('tags') ? body['tags'] : 'NO TAGS FIELD ENTERED';
+    console.log(`Title before improvement: \t ${body['title']}`);
+    console.log(`Tags before improvement: \t ${preTags}`);
+    itemPostTagEnhancer(body);
+    console.log(`Enhanced tags: ${body['tags']} \n `);
+  });
+}
 
+if (typeof require != 'undefined' && require.main === module)
+{
+  testItemPostTagEnhancer();
+}
+
+// EXPORTS
 module.exports = router;
