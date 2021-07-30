@@ -53,7 +53,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   Widget newMessageField() {
     TextEditingController messageController = TextEditingController();
-    final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
     return BottomAppBar(
       child: 
