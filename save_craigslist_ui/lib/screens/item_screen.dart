@@ -179,7 +179,7 @@ Widget sellerPhotoAndName(item) {
       Padding(
         padding: EdgeInsets.only(right: 5),
         child: FutureBuilder(
-            future: http.get(Uri.parse('${hostURL}:${port}/users/${item.seller_id}')),
+            future: http.get(Uri.parse('${hostURL}:${port}/items/${item.id}')),
             builder: (context, snapshot) {
               if (snapshot.hasData){
                 dynamic sellerJSONString = snapshot.data;

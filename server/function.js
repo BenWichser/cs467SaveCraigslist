@@ -222,15 +222,42 @@ function deleteItem(datatype, id) {
   }
 }
 
+async function getUserPhoto(user_id) {
+  /* getUserPhoto
+   * Returns a link to a user's photo
+   * Accepts:
+   *  user_id (String): user's id number
+   * Returns:
+   *  String with S3 location of user's photo
+   */
+  try {
+    const params = {
+      TableName: 'users',
+      KeyConditionExpression: "#i = :i",
+      ExpressionAttributeNames: {'#i': 'id'},
+      ExpressionAttributeValues: {':i': {'S': user_id}},
+      ProjectionExpression: "photo"
+      };
+    const result = await ddbClient.send(new QueryCommand(params));
+    if (result.Items.length == 1)
+      return result.Items[0].photo;
+    else
+      return null;
+  } catch(err) {
+    console.log(`Error getting User Photo for user ${user_id}: ${err}`);
+  }
+}
+
 module.exports = {
   createItem,
   getItem,
   deleteItem,
+  getAllUserItems,
   getNumItems,
   getOpeningItemList,
   getSearchItems,
   hashPassword,
   updateItem,
   queryMessages,
-  getAllUserItems,
+  getUserPhoto
 };
