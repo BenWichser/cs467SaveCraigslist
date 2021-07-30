@@ -7,6 +7,7 @@ var {
   ScanCommand,
   QueryCommand,
 } = require("@aws-sdk/client-dynamodb");
+var aws = require('aws-sdk');
 // ddbClient construction -- created from AWS documentation but not provided in
 //  AWS package
 var { ddbClient } = require("./libs/ddbClient.js");
@@ -102,6 +103,22 @@ async function getNumItems(num, lastEval, forSale = true) {
       } catch (err) {
         console.log(err);
       }
+}
+
+function makeListingsOutput(arr) {
+  /* makeListingsOutput
+   * Takes an array of items from DynamoDB and creates an appropriate array
+   *  suitable for sharing with front end.
+   * Accepts:
+   *  arr (array): array from DyanamoDB return Object.Items
+   * Returns:
+   *  List of items converted via marshall
+   */
+  let output = [];
+  arr.forEach( function (item) {
+    output.push(aws.DynamoDB.Converter.unmarshall(item)
+  )});
+  return output;
 }
 
 function addDistanceToUser(location, data) {
@@ -204,6 +221,64 @@ function deleteItem(datatype, id) {
   }
 }
 
+async function getItemList(body) {
+  /* getItemList
+   * Returns a list of items according to the specified criteria.
+   * Accepts:
+   *  body (Object): Requests from app
+   * Returns:
+   *  List of DynamoDB return objects
+   */
+  console.log(JSON.stringify(body));
+  // set default location to home of PBS's "Zoom" if there is none already given
+  var zip = 'location' in body ? String(body.location) : '70116';
+  // set default distance to 5 miles
+  var radius = 'radius' in body ? Number(body.radius) : 5;
+  // set default tags ot an empty string
+  var tags = 'search' in body ? String(body.search) : '';
+  // set default current user to jbutt
+  var currentUser = 'user_id' in body ? String(body.user_id) : 'jbutt';
+  console.log(currentUser);
+  const goodZips = zipcodes.radius(zip, radius);
+  console.log(`Good Zips: ${goodZips}$`);
+  // build Key Condition Expression and corresponding Attribute Values
+  /* Start by making the status = "For Sale".  Then build a parenthetical collection
+      of "OR" statements, one for each valid zip code.  Also place the correct values
+      in the ExpressionAttributeValues object.
+  */
+  var returnItems = [];
+  while (goodZips.length > 0) {
+    let thisZip = goodZips.pop();
+    let params = {
+      TableName: 'items',
+      IndexName: 'status-location-index',
+      KeyConditionExpression: '#s = :s and #l = :zip',
+      ExpressionAttributeNames: {
+        '#s': 'status',
+        '#l': 'location'
+      },
+      ExpressionAttributeValues: {
+        ':s': {S: 'For Sale'},
+        ':zip': {S: thisZip}
+      }
+    }
+    try {
+      const newItems = await ddbClient.send(new QueryCommand(params));
+      addDistanceToUser(zip, newItems);
+      returnItems = returnItems.concat(newItems['Items']);
+      console.log(`Items for zip ${thisZip}: ${newItems.Items}`)
+    } catch (err) {
+      console.log(`Error getItemList with parameters ${params} -- ${err}`);
+    }
+  }
+  // Remove our own items
+  returnItems = returnItems.filter( item => 
+    item["seller_id"]["S"] != currentUser
+    );
+  console.log(`Search results: ${JSON.stringify(returnItems)}`);
+  return returnItems;
+}
+
 function itemPostTagEnhancer(body) {
   /* itemPostTagEnhancer
   * Scans title for useable tags, and adds them to body's tag array
@@ -258,5 +333,7 @@ module.exports = {
   updateItem,
   queryMessages,
   getAllUserItems,
-  itemPostTagEnhancer
+  itemPostTagEnhancer,
+  makeListingsOutput,
+  getItemList
 };

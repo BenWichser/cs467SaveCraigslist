@@ -12,23 +12,6 @@ const express = require("express"),
 
 const router = express.Router();
 
-// Function
-function makeListingsOutput(obj) {
-  /* makeListingsOutput
-   * Takes an array of items from DynamoDB and creates an appropriate array
-   *  suitable for sharing with front end.
-   * Accepts:
-   *  obj (Object): DynamodDB return object with items array in it.
-   * Returns:
-   *  List of items converted via marshall
-   */
-  let output = [];
-  obj['Items'].forEach( function (item) {
-    output.push(aws.DynamoDB.Converter.unmarshall(item)
-  )});
-  return output;
-}
-
 
 router.use(bodyParser.json());
 
@@ -54,11 +37,11 @@ router.post(
 );
 
 router.get("/", async (req, res) => {
-  // set default location to home of PBS's "Zoom" if there is none already given
-  var zip = 'location' in req.body ? String(req.body.location) : '02134';
   try {
-    let listings = await db.getItemList(req.body);
-    res.status(201).json(makeListingsOutput(listings));
+    console.log(JSON.stringify(req.params));
+    let listings = await db.getItemList(req.params);
+    console.log("Got listings.  Now going to clean them up")
+    res.status(201).json(db.makeListingsOutput(listings));
   } catch (err) {
     console.log(`Error getting item list: ${err}`);
   }
@@ -66,7 +49,7 @@ router.get("/", async (req, res) => {
 
 router.get("/users/:user_id", async (req, res)=> {
   let listings = await db.getAllUserItems(req.params.user_id, null);
-  res.status(201).json(makeListingsOutput(listings));
+  res.status(201).json(db.makeListingsOutput(listings.Items));
 })
 
 router.get("/:item_id", async (req, res) => {
