@@ -12,4 +12,12 @@ class Message {
     required this.date_sent, 
     required this.content,
   });
+
+  Message.nullMessage({
+    this.message_id = 'null', 
+    this.sender_id = 'null', 
+    this.receiver_id = 'null', 
+    this.date_sent = 'null', 
+    this.content = 'null'
+  });
 }

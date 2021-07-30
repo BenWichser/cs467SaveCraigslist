@@ -26,24 +26,29 @@ class _MainTabControllerState extends State<MainTabController> {
     setState( (){} );
   }
 
-  
 
-  //Future allItems = http.get(Uri.parse('${hostURL}:${port}/items'));
-
-
-  //Right now AppBar is just being passed this _title string. Eventually this will likely be a widget to 
-  //display a search bar. 
-  String _title = 'Listings';
+  late Widget _header = listingsHeader();
 
   @override
   Widget build(BuildContext context) {
+    //Widget _header = listingsHeader();
+
     final screens = [ListingsScreen(updateItems: updateItems), MessagesScreen()];
 
     return DefaultTabController(
       length: screens.length,                              //Needs to be changed if you add more tabs
       initialIndex: _currentIndex,
       child: Scaffold(
-        appBar: AppBar(title: Text(_title)),
+        appBar: AppBar(
+          title: _header,
+          leading: Builder(
+            builder: (BuildContext context) {
+              return IconButton(
+                icon: Icon(Icons.settings), 
+                onPressed: () => Scaffold.of(context).openDrawer()
+              );
+            })
+        ),
         bottomNavigationBar: TabBar(
           tabs: MainTabController.tabs,
           onTap: onTabTapped),
@@ -60,11 +65,16 @@ class _MainTabControllerState extends State<MainTabController> {
     setState((){
       _currentIndex = index;
       if (index == 0){
-        _title = 'Listings';
+        _header = listingsHeader();
       } else {
-        _title = 'Messages';
+        _header = Text('Messages');
       }
     });
+  }
+
+  
+  Widget listingsHeader(){
+    return TextFormField();
   }
 
 
