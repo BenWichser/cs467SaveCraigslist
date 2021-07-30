@@ -13,6 +13,7 @@ var { ddbClient } = require("./libs/ddbClient.js");
 const crypt = require("bcrypt");
 const _ = require("lodash");
 var zipcodes = require("zipcodes");
+var stopwords = require("stopword");
 
 async function hashPassword(password) {
   const salt = await crypt.genSalt(10);
@@ -140,25 +141,6 @@ async function getOpeningItemList(location, num) {
 }
 
 
-async function getSearchItems(body) {
-  /* getSearchItemList
-   * Gets a DynamoDB return object containing search items.
-   * Accepts:
-   *  body (Ojbect): Request body
-   *  Returns:
-   *  Object from DynamoDB
-   */
-  console.log(`Entering getSearchItems`);
-  // Create search object information
-  const location = 'location' in body ? String(body.location) : '70116';
-  console.log(`Location: ${locaiton}`);
-  // default distance is 50 miles
-  const distance = 'radius' in body ? Number(body.radius) : 50;
-  // NEED OTHER PR APPROVED SO I CAN USE TAGS LOGIC
-  // Get all items that meet this specification
-}
-
-
 async function getAllUserItems(userId, lastEval) {
   const params = {
     TableName: "items",
@@ -222,15 +204,59 @@ function deleteItem(datatype, id) {
   }
 }
 
+function itemPostTagEnhancer(body) {
+  /* itemPostTagEnhancer
+  * Scans title for useable tags, and adds them to body's tag array
+  * Accepts:
+  *   body (Object):  Object from item post
+  * Returns:
+  *   Null.  Alters `body['tags']`.
+  */
+ // make new array based on any tags already there
+  let improvedTags = body.hasOwnProperty('tags') ? body['tags'] : [];
+  // remove punctuation from both title and tags, in that order -- 
+  // Not entirely sure ALL punctuation removal is best
+  // var punctuation = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~';
+  var regex = new RegExp(/[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,\-.\/:;<=>?@\[\]^_`{|}~]/, 'g');
+  const noPunctuationTitle = body['title'].replace(regex, ' ');
+  // any entered tags are made to be a string and then reformed into list
+  //  after punctuation is removed.  This is to make sure the list is only
+  //  of single words
+  improvedTags = improvedTags.join(' ').replace(regex, ' ').split(' ');
+  // change all current tag words to lower case
+  if (improvedTags.length > 0)
+    improvedTags.forEach( (name, index) => improvedTags[index] = name.toLowerCase());
+  // add every title word that isn't alreadya tag into tag array
+  const titleArray = noPunctuationTitle.split(' ');
+  for (let word of titleArray)
+  {
+    if (!improvedTags.includes(word.toLowerCase()))
+    {
+      improvedTags.push(word.toLowerCase());
+    }
+  }
+  // remove common words, as well as trailing 's' and 't' from contractions/possessive
+  improvedTags = stopwords.removeStopwords(improvedTags, [...stopwords.en, ...['s', 't']]);
+  // quick convert to set and back to remove duplicates
+  improvedTags = [ ...new Set(improvedTags)];
+  // remove empty strings
+  improvedTags = improvedTags.filter( function(ele) {
+    return  ele != '';
+  }
+  );
+  // fix the body (ody ody ody) 'tags' value
+  body['tags'] = improvedTags;
+}
+
 module.exports = {
   createItem,
   getItem,
   deleteItem,
   getNumItems,
   getOpeningItemList,
-  getSearchItems,
   hashPassword,
   updateItem,
   queryMessages,
   getAllUserItems,
+  itemPostTagEnhancer
 };
