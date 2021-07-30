@@ -16,6 +16,10 @@ class MessagesScreen extends StatefulWidget {
 }
 
 class _MessagesScreenState extends State<MessagesScreen> {
+  void updateConversations() {
+    setState((){});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -92,7 +96,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
     List<ConversationDisplay> displayableConversations = [];
 
     for(Conversation conversation in conversations){
-      ConversationDisplay displayableConversation = ConversationDisplay(conversation: conversation);
+      ConversationDisplay displayableConversation = ConversationDisplay(conversation: conversation, updateConversations: updateConversations);
       displayableConversations.add(displayableConversation);
     }
 

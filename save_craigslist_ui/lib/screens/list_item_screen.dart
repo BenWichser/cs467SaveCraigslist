@@ -204,13 +204,16 @@ Widget PriceField(TextEditingController priceController) {
                 hintText: 'Price',
               ),
               validator: (value) {
-                if (value == null || value.isEmpty) {
+                if (value == null || value.isEmpty ) {
                   return 'Please enter a price.';
                 }
                 if (!isValidPrice(value)) {
                   return 'Please enter a valid price.';
                 }
-              })));
+              }
+          )
+      )
+  );
 }
 
 
@@ -268,5 +271,10 @@ bool isValidPrice(String value) {
     return false;
   }
 
-  return true;
+  if (double.parse(value) >= 0){
+    return true;
+  }
+  else {
+    return false;
+  }
 }

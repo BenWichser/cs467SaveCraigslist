@@ -24,6 +24,9 @@ class _ListingsScreenState extends State<ListingsScreen> {
     //and returns the list in a Listview.
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text('Pop up menu icons here'),
+        automaticallyImplyLeading: false),
       body: FutureBuilder(
         future: http.get(Uri.parse('${hostURL}:${port}/items')), 
         builder: (context, snapshot) {

@@ -4,6 +4,9 @@ import 'dart:convert';
 import '../models/item.dart';
 import '../server_url.dart';
 import '../account.dart';
+import 'conversation_screen.dart';
+import '../models/conversation.dart';
+import '../models/message.dart';
 
 class ItemScreen extends StatelessWidget {
   final Item item;
@@ -24,7 +27,7 @@ class ItemScreen extends StatelessWidget {
             itemDescription(item),
 
             //Either the seller info, or a delete button if the current user is the seller
-            item.seller_id != currentUser.id ? sellerSection(item) : deleteButton(item.id, context)
+            item.seller_id != currentUser.id ? sellerSection(item, context) : deleteButton(item.id, context)
           ]
         )
       )
@@ -100,7 +103,7 @@ Widget itemInfo(item){
           style: TextStyle(fontWeight: FontWeight.bold)
         ),
         Text(
-          '\$${item.price}'
+          '\$${item.price.toStringAsFixed(2)}'
         )
       ]
     )
@@ -136,7 +139,7 @@ Widget itemDescription(item){
   ); 
 }
 
-Widget sellerSection(item){
+Widget sellerSection(item, BuildContext context){
   return SingleChildScrollView(
     child: Padding(
       padding: EdgeInsets.only(right: 20, left: 20, bottom: 20),
@@ -150,61 +153,66 @@ Widget sellerSection(item){
               fontSize: 20)
             )
           ),
-          sellerInfo(item)
+          sellerInfo(item, context)
         ]
       )
     )
   ); 
 }
 
-Widget sellerInfo(item) {
-//This needs to eventually take the seller information as a parameter
+Widget sellerInfo(item, BuildContext context) {
+  return FutureBuilder(
+    future: http.get(Uri.parse('${hostURL}:${port}/users/${item.seller_id}')),
+    builder: (context, snapshot) { 
+      if (snapshot.hasData){
+        dynamic sellerJSONString = snapshot.data;
+        Map sellerJSON = jsonDecode(sellerJSONString.body);
 
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      sellerPhotoAndName(item),
-      ElevatedButton(
-        onPressed: () {print('Messaging Seller');},
-        child: const Text('Message'),
-      )
-    ]
-  );
-}
+        //debugPrint('${sellerJSON}', wrapWidth: 1024);
 
-Widget sellerPhotoAndName(item) {
-//This needs to eventually take the seller information as a parameter
-  return Row(
-    children: [
-      Padding(
-        padding: EdgeInsets.only(right: 5),
-        child: FutureBuilder(
-            future: http.get(Uri.parse('${hostURL}:${port}/users/${item.seller_id}')),
-            builder: (context, snapshot) {
-              if (snapshot.hasData){
-                dynamic sellerJSONString = snapshot.data;
-                Map sellerJSON = jsonDecode(sellerJSONString.body);
-
-                //debugPrint('${sellerJSON}', wrapWidth: 1024);
-
-                return CircleAvatar(
-                  backgroundColor: Colors.black,
-                  foregroundImage: NetworkImage('${s3UserPrefix}${sellerJSON['photo']}')
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(right: 5),
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black,
+                    foregroundImage: NetworkImage('${s3UserPrefix}${sellerJSON['photo']}')
+                  )
+                ), 
+                Text(item.seller_id)]
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Conversation conversation = Conversation(
+                 receiver_id: sellerJSON['id'],
+                 receiverPhoto: sellerJSON['photo'],
+                 mostRecentMessage: Message.nullMessage()
                 );
-
-              }
-              else if (snapshot.hasError){
-                return Text('Error loading seller'); 
-              }
-              else {
-                //Spinny wheel while the data loads
-                return Center(child: CircularProgressIndicator()); 
-              }
-            }        
-      )
-    ), 
-    Text(item.seller_id)]
+                Navigator.push<void>(
+                  context,  
+                  MaterialPageRoute<void>(
+                    builder: (BuildContext context) => ConversationScreen
+                      (conversation: conversation, 
+                      updateConversations : (){}
+                    )
+                  )
+                );
+              },
+            child: const Text('Message'),
+            )  
+        ]);
+      }
+      else if (snapshot.hasError){
+        return Text('Error loading seller'); 
+      }
+      else {
+        //Spinny wheel while the data loads
+        return Center(child: CircularProgressIndicator()); 
+      }
+    }
   );
 }
-
 
