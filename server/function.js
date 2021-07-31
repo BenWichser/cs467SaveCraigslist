@@ -15,6 +15,7 @@ const crypt = require("bcrypt");
 const _ = require("lodash");
 var zipcodes = require("zipcodes");
 var stopwords = require("stopword");
+const { filter } = require("lodash");
 
 async function hashPassword(password) {
   const salt = await crypt.genSalt(10);
@@ -242,41 +243,104 @@ async function getItemList(body) {
   const goodZips = zipcodes.radius(zip, radius);
   console.log(`Good Zips: ${goodZips}$`);
   // build Key Condition Expression and corresponding Attribute Values
-  /* Start by making the status = "For Sale".  Then build a parenthetical collection
-      of "OR" statements, one for each valid zip code.  Also place the correct values
-      in the ExpressionAttributeValues object.
+  /* Start by making the key status = "For Sale". Then build filter keys:
+      seller is not requester (always on),
+      price between min and max (if requested)
+      location within valid zip codes
+     Also add values to the attribute names as we go along
   */
   var returnItems = [];
-  while (goodZips.length > 0) {
-    let thisZip = goodZips.pop();
-    let params = {
-      TableName: 'items',
-      IndexName: 'status-location-index',
-      KeyConditionExpression: '#s = :s and #l = :zip',
-      ExpressionAttributeNames: {
-        '#s': 'status',
-        '#l': 'location'
-      },
-      ExpressionAttributeValues: {
-        ':s': {S: 'For Sale'},
-        ':zip': {S: thisZip}
-      }
+  // until we are out of zip codes to look through
+  var expressionAttributeValues = {
+    ':s': {S: 'For Sale'},
+    ':sid': {S: currentUser}
+  }
+  var filterExpression = "seller_id <> :sid"
+  var expressionAttributeNames = {
+    '#s':  'status',
+    '#l': 'location'
+  }
+  numZips = 0;
+  while (goodZips.length > 0) { 
+    if (numZips == 0) {
+      filterExpression += " AND ("
+    } else
+    {
+      filterExpression += " OR "
     }
-    try {
-      const newItems = await ddbClient.send(new QueryCommand(params));
-      addDistanceToUser(zip, newItems);
-      returnItems = returnItems.concat(newItems['Items']);
-      console.log(`Items for zip ${thisZip}: ${newItems.Items}`)
-    } catch (err) {
-      console.log(`Error getItemList with parameters ${params} -- ${err}`);
+    numZips += 1;
+    filterExpression += `#l = :zip${numZips}`;
+    expressionAttributeValues[`:zip${numZips}`] = {'S': goodZips.pop()};
+  }
+  // add closing parenthesis for location piece
+  if (numZips += 1)
+  {
+    filterExpression += ")";
+  }
+
+  // Add price information, depending on user request
+  if ('minPrice' in body && 'maxPrice' in body) {
+    filterExpression += "price between :minPrice and :maxPrice"; 
+    expressionAttributeValues[':minPrice'] = {'N': Number(body.minPrice)};
+    expressionAttributeValues[':maxPrice'] = {'N': Number(body.maxPrice)};
+  } else if ('minPrice' in body)
+  {
+    filterExpression += "price >= :minPrice";
+    expressionAttributeValues[':minPrice'] = {'N': Number(body.minPrice)};
+  } else if ('maxPrice' in body)
+  {
+    filterExpression += "price <= :maxPrice";
+    expressionAttributeValues[':maxPrice'] = {'N': Number(body.maxPrice)};
+  }
+  // Add tag information, depending on user request
+  if ('tags' in body)
+  {
+    // turn 'tags' from server into a list in format as stored on database
+    var fakePost = {'title': body['tags']};
+    itemPostTagEnhancer(fakePost);
+    const tags = fakePost['tags'];
+    console.log(tags);
+    // make sure cleaning didnt remove all tags
+    if (tags.length > 0)
+    {
+      filterExpression['#t'] =  'tags';
+      const numTags = 0;
+      while (tags.length > 0)
+      {
+        //introduce tag logic clause in filter expression, or the logic connector "or"
+        if (numTags == 0)
+        {
+          filterExpression += "AND (";
+        } else
+        {
+          filterExpression += " OR "
+        }
+        // add tag information to filter expression and the object of variables
+        numTags += 1;
+        filterExpression += `contains(#t, :tag${numTags}`;
+        expressionAttributeValues[`:tag${numTags}`] = {'S': tags.pop()};
+      }
+      filterExpression += ")";
     }
   }
-  // Remove our own items
-  returnItems = returnItems.filter( item => 
-    item["seller_id"]["S"] != currentUser
-    );
-  console.log(`Search results: ${JSON.stringify(returnItems)}`);
-  return returnItems;
+  let params = {
+      TableName: 'items',
+      IndexName: 'status-index',
+      KeyConditionExpression: '#s = :s',
+      FilterExpression: filterExpression,
+      ExpressionAttributeNames: expressionAttributeNames,
+      ExpressionAttributeValues: expressionAttributeValues
+  }
+  console.log(JSON.stringify(params));
+  try {
+    const newItems = await ddbClient.send(new QueryCommand(params));
+    addDistanceToUser(zip, newItems);
+    returnItems = returnItems.concat(newItems['Items']);
+  } catch (err) {
+    console.log(`ERROR getItemList with parameters ${JSON.stringify(params)} -- ${err}`);
+  }
+console.log(`Search results: ${JSON.stringify(returnItems)}`);
+return returnItems;
 }
 
 function itemPostTagEnhancer(body) {
