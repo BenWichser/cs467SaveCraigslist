@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../components/item_display.dart';
 import '../models/item.dart';
 import '../server_url.dart';
+import '../account.dart';
 
 class ListingsScreen extends StatefulWidget {
   final void Function() updateItems;
@@ -16,17 +17,31 @@ class ListingsScreen extends StatefulWidget {
 
 
 class _ListingsScreenState extends State<ListingsScreen> {
+  var searchLocation = currentUser.zip;
+  var radius = 5;
+  var searchTerms = '';
+  var minPrice = 0.0;
+  var maxPrice = double.infinity;
+
+  var sortBy = 'DATE';
   
   @override
   Widget build(BuildContext context) {
     //We get the list of every item in the database as a future. The futurebuilder checks
     //for data, converts the json to a list of Item objects, creates a list of ItemDisplay widgets
     //and returns the list in a Listview.
+    var appBarHeight = AppBar().preferredSize.height * .8;
+    var appBarWidth = AppBar().preferredSize.width;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Pop up menu icons here'),
-        automaticallyImplyLeading: false),
+          automaticallyImplyLeading: false,
+          title: SizedBox(
+            height: appBarHeight, 
+            width: appBarWidth,
+            child: filters(),
+          )
+      ),
       body: FutureBuilder(
         future: http.get(Uri.parse('${hostURL}:${port}/items')), 
         builder: (context, snapshot) {
@@ -47,6 +62,170 @@ class _ListingsScreenState extends State<ListingsScreen> {
         }
       )
     ); 
+  }
+
+  Widget filters(){
+    //This widget is a monstrosity. Break this up for the love of god. 
+
+    TextEditingController zipController = TextEditingController();
+    zipController.text = searchLocation;
+
+    TextEditingController minPriceController = TextEditingController();
+    if(minPrice != 0.0){
+      minPriceController.text = minPrice.toStringAsFixed(2);
+    }
+
+    TextEditingController maxPriceController = TextEditingController();
+    if(maxPrice != double.infinity){
+      maxPriceController.text = maxPrice.toStringAsFixed(2);
+    }
+
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+      children: [
+          PopupMenuButton(
+            child: Row(children: [Icon(Icons.add_location), Text('${searchLocation} - ${radius} Miles')]),
+            itemBuilder: (BuildContext context) => [
+              //Zip Code Field
+              PopupMenuItem(
+                height: 50,
+                child: Container(
+                  width: MediaQuery.of(context).size.width * .7, 
+                  child: TextFormField(
+                    controller: zipController, 
+                    decoration: InputDecoration(
+                      prefixIcon: Icon(Icons.add_location),
+                      border: OutlineInputBorder()),
+                    onFieldSubmitted: (value) {
+                      if(value != ''){ //Need to verify if this is actually a zip code
+                        setState(() {
+                          searchLocation = value;
+                        });
+                        Navigator.pop(context);
+                      }
+                    }
+                 )
+                )
+              ),
+              //Radius drop down
+              PopupMenuItem(
+                height: 50,
+                child: Container(
+                  width: MediaQuery.of(context).size.width * .7,
+                  child: DropdownButtonFormField<int>(
+                    items: [
+                      DropdownMenuItem<int>(
+                        value: 1,
+                        child: Text('1 Mile')
+                      ),
+                      DropdownMenuItem<int>(
+                        value: 5,
+                        child: Text('5 Miles')
+                      ),
+                      DropdownMenuItem<int>(
+                        value: 10,
+                        child: Text('10 Miles')
+                      ),
+                      DropdownMenuItem<int>(
+                        value: 25,
+                        child: Text('25 Miles')
+                      ),
+                      DropdownMenuItem<int>(
+                        value: 50,
+                        child: Text('50 miles')
+                      )
+                    ],
+                    onSaved: (value) {radius = value!;},
+                    onChanged: (value) {
+                      setState((){radius = value!;});
+                    },
+                    decoration: InputDecoration(hintText: '${radius} miles', border: OutlineInputBorder())
+                  )
+                )
+              )
+            ]
+          ),
+          Row(children: [
+            //Sort button
+            PopupMenuButton<String>(
+              icon: Icon(Icons.sort, size: 25),
+              onSelected: (selection) {setState((){sortBy = selection;});},
+              itemBuilder: (BuildContext context) => [
+                PopupMenuItem(
+                  child: Text('Sort by:', style: TextStyle(color: Colors.black)),
+                  enabled: false,
+                  
+                ),
+                CheckedPopupMenuItem(
+                  checked: sortBy == 'DATE',
+                  value: 'DATE',
+                  child: Text('Date')
+                ),
+                CheckedPopupMenuItem(
+                  checked: sortBy == 'PRICE',
+                  value: 'PRICE',
+                  child: Text('Price')
+                ),
+                CheckedPopupMenuItem(
+                  checked: sortBy == 'RELEVANCE',
+                  value: 'RELEVANCE',
+                  child: Text('Relevance')
+                )
+              ], 
+            ),
+            //Filters button
+            PopupMenuButton(
+              icon: Icon(Icons.tune_sharp, size: 25),
+              itemBuilder: (BuildContext context) => [
+                PopupMenuItem(
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * .7,
+                    height: 100,
+                    child: Column(children: [
+                      Text('Price Range'),
+                      Row(children: [
+                        //Min Price Field
+                        Expanded(
+                          child: TextFormField(
+                            controller: minPriceController,
+                            decoration: InputDecoration(
+                              hintText: 'min',
+                              border: OutlineInputBorder()
+                            ),
+                            onFieldSubmitted: (value) {
+                              setState((){
+                              minPrice = double.parse(minPriceController.text);
+                              maxPrice = double.parse(maxPriceController.text);                    
+                              });
+                              Navigator.pop(context);
+                            },
+                          )
+                        ),
+                        Text(' to '),
+                        //Max Price Field
+                        Expanded(
+                          child: TextFormField(
+                            controller: maxPriceController,
+                            decoration: InputDecoration(
+                              hintText: 'max',
+                              border: OutlineInputBorder()
+                            ),
+                            onFieldSubmitted: (value) {
+                              setState((){
+                              minPrice = double.parse(minPriceController.text);
+                              maxPrice = double.parse(maxPriceController.text);
+                              });
+                              Navigator.pop(context);
+                            },
+                          )
+                        ),
+                      ])
+                    ])
+                  )
+                )
+              ], 
+            )
+          ])
+    ]);
   }
 }
 
@@ -98,143 +277,3 @@ List<ItemDisplay> createListOfItemDisplays(List<Item> items, updateItems){
 
   return displayableItems;
 }
-
-
-/*
-App is successfully getting items from the database. No longer need this dummy data. Keeping it for now
-in case I need it for debugging. 
-
-
-//DUMMY DATA to be replaced with real JSON
-List<Map> JSONItems = [{
-  'id' : '001',
-  'title' : 'This is an item that is for sale',
-  'description' : 'This is the description of that item that is for sale',
-  'seller_id' : '001',
-  'price' : 4000.00,
-  'location' : '80205',
-  'status' : 'For Sale',
-  'photos' : ['url1', 'url2', 'url3'],
-},
-{
-  'id' : '001',
-  'title' : 'This is an item that is for sale',
-  'description' : 'This is the description of that item that is for sale',
-  'seller_id' : '001',
-  'price' : 4000.00,
-  'location' : '80205',
-  'status' : 'For Sale',
-  'photos' : ['url1', 'url2', 'url3'],
-},
-{
-  'id' : '001',
-  'title' : 'This is an item that is for sale',
-  'description' : 'This is the description of that item that is for sale',
-  'seller_id' : '001',
-  'price' : 4000.00,
-  'location' : '80205',
-  'status' : 'For Sale',
-  'photos' : ['url1', 'url2', 'url3'],
-},
-{
-  'id' : '001',
-  'title' : 'This is an item that is for sale',
-  'description' : 'This is the description of that item that is for sale',
-  'seller_id' : '001',
-  'price' : 4000.00,
-  'location' : '80205',
-  'status' : 'For Sale',
-  'photos' : ['url1', 'url2', 'url3'],
-},
-{
-  'id' : '001',
-  'title' : 'This is an item that is for sale',
-  'description' : 'This is the description of that item that is for sale',
-  'seller_id' : '001',
-  'price' : 4000.00,
-  'location' : '80205',
-  'status' : 'For Sale',
-  'photos' : ['url1', 'url2', 'url3'],
-},
-{
-  'id' : '001',
-  'title' : 'This is an item that is for sale',
-  'description' : 'This is the description of that item that is for sale',
-  'seller_id' : '001',
-  'price' : 4000.00,
-  'location' : '80205',
-  'status' : 'For Sale',
-  'photos' : ['url1', 'url2', 'url3'],
-},
-{
-  'id' : '001',
-  'title' : 'This is an item that is for sale',
-  'description' : 'This is the description of that item that is for sale',
-  'seller_id' : '001',
-  'price' : 4000.00,
-  'location' : '80205',
-  'status' : 'For Sale',
-  'photos' : ['url1', 'url2', 'url3'],
-},
-{
-  'id' : '001',
-  'title' : 'This is an item that is for sale',
-  'description' : 'This is the description of that item that is for sale',
-  'seller_id' : '001',
-  'price' : 4000.00,
-  'location' : '80205',
-  'status' : 'For Sale',
-  'photos' : ['url1', 'url2', 'url3'],
-},
-{
-  'id' : '001',
-  'title' : 'This is an item that is for sale',
-  'description' : 'This is the description of that item that is for sale',
-  'seller_id' : '001',
-  'price' : 4000.00,
-  'location' : '80205',
-  'status' : 'For Sale',
-  'photos' : ['url1', 'url2', 'url3'],
-},
-{
-  'id' : '001',
-  'title' : 'This is an item that is for sale',
-  'description' : 'This is the description of that item that is for sale',
-  'seller_id' : '001',
-  'price' : 4000.00,
-  'location' : '80205',
-  'status' : 'For Sale',
-  'photos' : ['url1', 'url2', 'url3'],
-},
-{
-  'id' : '001',
-  'title' : 'This is an item that is for sale',
-  'description' : 'This is the description of that item that is for sale',
-  'seller_id' : '001',
-  'price' : 4000.00,
-  'location' : '80205',
-  'status' : 'For Sale',
-  'photos' : ['url1', 'url2', 'url3'],
-}];
-
-List<Map> JSONItems2 = [
-  {
-    "photos":
-      [{"caption":"Front Mug Shot","URL":"savecl-s3-us-east-2.aws.com/frontmugshot.png"},
-      {"caption":"Side Mug Shot","URL":"savecl-s3-us-east-2.aws.com/sidemugshot.png"}],
-    "location":"02134",
-    "seller_id":"mckenzry",
-    "description":"Coffee Mug displaying \"World's Best Boss\"",
-    "id":"2",
-    "price":9.76,
-    "title":"Coffee Mug"
-  },
-  {
-    "location":"90210",
-    "id":"1",
-    "description":"Empty Altoids Tin.  Holds buttons expertly.",
-    "price":2,
-    "seller_id":"mckenzry",
-    "title":"Empty Altoids Tin"
-  }];
-  */

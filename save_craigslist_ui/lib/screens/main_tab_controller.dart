@@ -7,6 +7,7 @@ import 'my_listings_screen.dart';
 import '../models/user.dart';
 import '../account.dart';
 import '../server_url.dart';
+import 'package:flutter/services.dart';
 
 class MainTabController extends StatefulWidget {
 
@@ -34,13 +35,18 @@ class _MainTabControllerState extends State<MainTabController> {
     //Widget _header = listingsHeader();
 
     final screens = [ListingsScreen(updateItems: updateItems), MessagesScreen()];
+    var appBarHeight = AppBar().preferredSize.height * .8;
 
     return DefaultTabController(
       length: screens.length,                              //Needs to be changed if you add more tabs
       initialIndex: _currentIndex,
       child: Scaffold(
         appBar: AppBar(
-          title: _header,
+          elevation: 0,
+          title: SizedBox(
+            height: appBarHeight, 
+            child: _header,
+          ),
           leading: Builder(
             builder: (BuildContext context) {
               return IconButton(
@@ -67,14 +73,34 @@ class _MainTabControllerState extends State<MainTabController> {
       if (index == 0){
         _header = listingsHeader();
       } else {
-        _header = Text('Messages');
+        _header = Align(alignment: Alignment.centerLeft, child: Text('Messages'));
       }
     });
   }
 
   
   Widget listingsHeader(){
-    return TextFormField();
+    TextEditingController searchController = TextEditingController();
+
+    return FractionallySizedBox(
+      alignment: Alignment.center,
+      heightFactor: .8,
+      child: TextFormField(
+        textInputAction: TextInputAction.search,
+        controller: searchController, 
+        decoration: InputDecoration(
+          prefixIcon: Icon(Icons.search),
+          suffixIcon: IconButton(
+            onPressed: () {
+              //Clear search field and close keyboard
+              FocusScope.of(context).requestFocus(new FocusNode()); 
+              searchController.clear();
+              
+              
+            },
+            icon: Icon(Icons.clear)),
+          border: OutlineInputBorder())
+    ));
   }
 
 
