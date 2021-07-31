@@ -7,12 +7,14 @@ var {
   ScanCommand,
   QueryCommand,
 } = require("@aws-sdk/client-dynamodb");
+var aws = require('aws-sdk');
 // ddbClient construction -- created from AWS documentation but not provided in
 //  AWS package
 var { ddbClient } = require("./libs/ddbClient.js");
 const crypt = require("bcrypt");
 const _ = require("lodash");
 var zipcodes = require("zipcodes");
+var stopwords = require("stopword");
 
 async function hashPassword(password) {
   const salt = await crypt.genSalt(10);
@@ -103,6 +105,22 @@ async function getNumItems(num, lastEval, forSale = true) {
       }
 }
 
+function makeListingsOutput(arr) {
+  /* makeListingsOutput
+   * Takes an array of items from DynamoDB and creates an appropriate array
+   *  suitable for sharing with front end.
+   * Accepts:
+   *  arr (array): array from DyanamoDB return Object.Items
+   * Returns:
+   *  List of items converted via marshall
+   */
+  let output = [];
+  arr.forEach( function (item) {
+    output.push(aws.DynamoDB.Converter.unmarshall(item)
+  )});
+  return output;
+}
+
 function addDistanceToUser(location, data) {
   /* addDistanceToUser
    * Takes a list of JSON objects, from DynamoDB, and adds a key:value pair, representing
@@ -137,25 +155,6 @@ async function getOpeningItemList(location, num) {
   } catch (err) {
     console.log(`Error getting opening item list: ${err}`);
   }
-}
-
-
-async function getSearchItems(body) {
-  /* getSearchItemList
-   * Gets a DynamoDB return object containing search items.
-   * Accepts:
-   *  body (Ojbect): Request body
-   *  Returns:
-   *  Object from DynamoDB
-   */
-  console.log(`Entering getSearchItems`);
-  // Create search object information
-  const location = 'location' in body ? String(body.location) : '70116';
-  console.log(`Location: ${locaiton}`);
-  // default distance is 50 miles
-  const distance = 'radius' in body ? Number(body.radius) : 50;
-  // NEED OTHER PR APPROVED SO I CAN USE TAGS LOGIC
-  // Get all items that meet this specification
 }
 
 
@@ -222,15 +221,119 @@ function deleteItem(datatype, id) {
   }
 }
 
+async function getItemList(body) {
+  /* getItemList
+   * Returns a list of items according to the specified criteria.
+   * Accepts:
+   *  body (Object): Requests from app
+   * Returns:
+   *  List of DynamoDB return objects
+   */
+  console.log(JSON.stringify(body));
+  // set default location to home of PBS's "Zoom" if there is none already given
+  var zip = 'location' in body ? String(body.location) : '70116';
+  // set default distance to 5 miles
+  var radius = 'radius' in body ? Number(body.radius) : 5;
+  // set default tags ot an empty string
+  var tags = 'search' in body ? String(body.search) : '';
+  // set default current user to jbutt
+  var currentUser = 'user_id' in body ? String(body.user_id) : 'jbutt';
+  console.log(currentUser);
+  const goodZips = zipcodes.radius(zip, radius);
+  console.log(`Good Zips: ${goodZips}$`);
+  // build Key Condition Expression and corresponding Attribute Values
+  /* Start by making the status = "For Sale".  Then build a parenthetical collection
+      of "OR" statements, one for each valid zip code.  Also place the correct values
+      in the ExpressionAttributeValues object.
+  */
+  var returnItems = [];
+  while (goodZips.length > 0) {
+    let thisZip = goodZips.pop();
+    let params = {
+      TableName: 'items',
+      IndexName: 'status-location-index',
+      KeyConditionExpression: '#s = :s and #l = :zip',
+      ExpressionAttributeNames: {
+        '#s': 'status',
+        '#l': 'location'
+      },
+      ExpressionAttributeValues: {
+        ':s': {S: 'For Sale'},
+        ':zip': {S: thisZip}
+      }
+    }
+    try {
+      const newItems = await ddbClient.send(new QueryCommand(params));
+      addDistanceToUser(zip, newItems);
+      returnItems = returnItems.concat(newItems['Items']);
+      console.log(`Items for zip ${thisZip}: ${newItems.Items}`)
+    } catch (err) {
+      console.log(`Error getItemList with parameters ${params} -- ${err}`);
+    }
+  }
+  // Remove our own items
+  returnItems = returnItems.filter( item => 
+    item["seller_id"]["S"] != currentUser
+    );
+  console.log(`Search results: ${JSON.stringify(returnItems)}`);
+  return returnItems;
+}
+
+function itemPostTagEnhancer(body) {
+  /* itemPostTagEnhancer
+  * Scans title for useable tags, and adds them to body's tag array
+  * Accepts:
+  *   body (Object):  Object from item post
+  * Returns:
+  *   Null.  Alters `body['tags']`.
+  */
+ // make new array based on any tags already there
+  let improvedTags = body.hasOwnProperty('tags') ? body['tags'] : [];
+  // remove punctuation from both title and tags, in that order -- 
+  // Not entirely sure ALL punctuation removal is best
+  // var punctuation = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~';
+  var regex = new RegExp(/[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,\-.\/:;<=>?@\[\]^_`{|}~]/, 'g');
+  const noPunctuationTitle = body['title'].replace(regex, ' ');
+  // any entered tags are made to be a string and then reformed into list
+  //  after punctuation is removed.  This is to make sure the list is only
+  //  of single words
+  improvedTags = improvedTags.join(' ').replace(regex, ' ').split(' ');
+  // change all current tag words to lower case
+  if (improvedTags.length > 0)
+    improvedTags.forEach( (name, index) => improvedTags[index] = name.toLowerCase());
+  // add every title word that isn't alreadya tag into tag array
+  const titleArray = noPunctuationTitle.split(' ');
+  for (let word of titleArray)
+  {
+    if (!improvedTags.includes(word.toLowerCase()))
+    {
+      improvedTags.push(word.toLowerCase());
+    }
+  }
+  // remove common words, as well as trailing 's' and 't' from contractions/possessive
+  improvedTags = stopwords.removeStopwords(improvedTags, [...stopwords.en, ...['s', 't']]);
+  // quick convert to set and back to remove duplicates
+  improvedTags = [ ...new Set(improvedTags)];
+  // remove empty strings
+  improvedTags = improvedTags.filter( function(ele) {
+    return  ele != '';
+  }
+  );
+  // fix the body (ody ody ody) 'tags' value
+  body['tags'] = improvedTags;
+}
+
 module.exports = {
   createItem,
   getItem,
   deleteItem,
   getNumItems,
   getOpeningItemList,
-  getSearchItems,
   hashPassword,
   updateItem,
   queryMessages,
   getAllUserItems,
+  itemPostTagEnhancer,
+  makeListingsOutput,
+  getItemList
 };
