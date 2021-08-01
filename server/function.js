@@ -236,7 +236,7 @@ function itemSearchAddLocation(params, body, zipController) {
   // set default location to home of PBS's "Zoom" if there is none already given
   var zip = 'location' in body ? String(body.location) : '70116';
   // set default distance to 5 miles
-  var radius = 'radius' in body ? Number(body.radius) : 1100;
+  var radius = 'radius' in body ? Number(body.radius) : 5;
   const goodZips = zipcodes.radius(zip, radius);
   // if, for some crazy reason, we have no zip codes...bail
   if (goodZips.length == 0)
