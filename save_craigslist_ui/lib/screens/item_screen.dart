@@ -162,7 +162,7 @@ Widget sellerSection(item, BuildContext context){
 
 Widget sellerInfo(item, BuildContext context) {
   return FutureBuilder(
-    future: http.get(Uri.parse('${hostURL}:${port}/users/${item.seller_id}')),
+    future: http.get(Uri.parse('${hostURL}:${port}/items/${item.id}')),
     builder: (context, snapshot) { 
       if (snapshot.hasData){
         dynamic sellerJSONString = snapshot.data;
