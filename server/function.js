@@ -234,7 +234,7 @@ function itemSearchAddLocation(params, body) {
   // set default location to home of PBS's "Zoom" if there is none already given
   var zip = 'location' in body ? String(body.location) : '70116';
   // set default distance to 5 miles
-  var radius = 'radius' in body ? Number(body.radius) : 5;
+  var radius = 'radius' in body ? Number(body.radius) : 25;
   const goodZips = zipcodes.radius(zip, radius);
   console.log(`Good Zips: ${goodZips}$`);
   // until we are out of zip codes to look through
@@ -322,8 +322,35 @@ function itemSearchAddTags(params, body){
     }
     params.FilterExpression += ")";
   }
-  
 }
+
+function addRelevanceToSearch(body, newItems) {
+  /* Adds the number of tag hits
+   * Accepts:
+      body (object): search request parameters
+      newItems: list of new items
+   * Returns:
+      Nothing.  Modifies newItems
+   */
+  var fakeTitle = "tags" in body? body.tags : '';
+  var fakePost = {'title':  fakeTitle};
+  itemPostTagEnhancer(fakePost);
+  const tags = fakePost['tags']
+  var itemTagCount;
+  console.log(newItems);
+  for (item of newItems.Items) {
+    itemTagCount = 0;
+    for (tag of item['tags']['L'])
+    {
+      if (tag in tags)
+      {
+        itemTagCount += 1;
+      }
+    }
+    item['num_matching_tags'] = itemTagCount;
+  }
+}
+
 async function getItemList(body) {
   /* getItemList
    * Returns a list of items according to the specified criteria.
@@ -358,14 +385,15 @@ async function getItemList(body) {
   itemSearchAddTags(params, body);
 console.log(JSON.stringify(params));
   try {
-    const newItems = await ddbClient.send(new QueryCommand(params));
-    const currentZip = 'location' in body ? body.location : '70116';
-    addDistanceToUser(currentZip, newItems);
-    returnItems = returnItems.concat(newItems['Items']);
+    var newItems = await ddbClient.send(new QueryCommand(params));
   } catch (err) {
     console.log(`ERROR getItemList with parameters ${JSON.stringify(params)} -- ${err}`);
   }
-console.log(`Search results: ${JSON.stringify(returnItems)}`);
+  const currentZip = 'location' in body ? body.location : '70116';
+  addDistanceToUser(currentZip, newItems);
+  addRelevanceToSearch(body, newItems);
+  returnItems = returnItems.concat(newItems['Items']);
+ console.log(`Search results: ${JSON.stringify(returnItems)}`);
 return returnItems;
 }
 
