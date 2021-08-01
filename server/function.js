@@ -222,40 +222,47 @@ function deleteItem(datatype, id) {
   }
 }
 
-function itemSearchAddLocation(params, body) {
+function itemSearchAddLocation(params, body, zipController) {
   /* itemSearchAddLocation
    * Adds location specification to item search parameters.
    * Accepts:
    *  params (object): Object created for Dynamo query command
    *  body (object): Body of search request
+   *  zipController (object): information on starting search index and whether or not
+   *    search should continue
    * Returns:
-   *  Nothing.  Alters `params`
+   *  Boolean on if more zip codes must be considered.  Also slters `params`
    */ 
   // set default location to home of PBS's "Zoom" if there is none already given
   var zip = 'location' in body ? String(body.location) : '70116';
   // set default distance to 5 miles
-  var radius = 'radius' in body ? Number(body.radius) : 25;
+  var radius = 'radius' in body ? Number(body.radius) : 1100;
   const goodZips = zipcodes.radius(zip, radius);
+  // if, for some crazy reason, we have no zip codes...bail
+  if (goodZips.length == 0)
+  {
+    return;
+  }
   console.log(`Good Zips: ${goodZips}$`);
-  // until we are out of zip codes to look through
-  let zipNum = 0;
-  while (goodZips.length > 0) { 
-    if (zipNum == 0) {
+  // until we are out of zip codes to look through, or we use 100 zips.
+  var listZips = 0;
+  zipNum = zipController.next_start;
+  while (zipNum < goodZips.length && listZips < 100)
+  {
+    if (zipNum % 100 == 0) {
       params.ExpressionAttributeNames['#l'] = 'location';
-      params.FilterExpression += " AND ("
+      params.FilterExpression += " AND #l in ("
     } else
     {
-      params.FilterExpression += " OR "
+      params.FilterExpression += ", "
     }
+    params.FilterExpression += `:zip${zipNum}`;
+    params.ExpressionAttributeValues[`:zip${zipNum}`] = {'S': goodZips[zipNum]};
     zipNum += 1;
-    params.FilterExpression += `#l = :zip${zipNum}`;
-    params.ExpressionAttributeValues[`:zip${zipNum}`] = {'S': goodZips.pop()};
+    listZips +=1;
   }
-  // add closing parenthesis for location piece, if there was at least one
-  if (zipNum += 1)
-  {
-    params.FilterExpression += ")";
-  }
+  params.FilterExpression += ")";
+  return {'next_start': zipNum, 'search_zips_again': !(zipNum == goodZips.length)};
 }
 
 function itemSearchAddPrice(params, body) {
@@ -324,11 +331,11 @@ function itemSearchAddTags(params, body){
   }
 }
 
-function addRelevanceToSearch(body, newItems) {
+function addRelevanceToSearch(body, returnItems) {
   /* Adds the number of tag hits
    * Accepts:
       body (object): search request parameters
-      newItems: list of new items
+      returnItems: list of items to return
    * Returns:
       Nothing.  Modifies newItems
    */
@@ -337,8 +344,8 @@ function addRelevanceToSearch(body, newItems) {
   itemPostTagEnhancer(fakePost);
   const tags = fakePost['tags']
   var itemTagCount;
-  console.log(newItems);
-  for (item of newItems.Items) {
+  console.log(returnItems);
+  for (item of returnItems) {
     itemTagCount = 0;
     for (tag of item['tags']['L'])
     {
@@ -363,36 +370,44 @@ async function getItemList(body) {
   // set default current user to jbutt
   var currentUser = 'user_id' in body ? String(body.user_id) : 'jbutt';
   var returnItems = [];
-  // set up parameters including need for active "For Sale" listing from another seller
-  var params = {
-    TableName: "items",
-    IndexName: "status-index",
-    KeyConditionExpression: '#s = :s',
-    FilterExpression: "seller_id <> :sid",
-    ExpressionAttributeNames: {
-      '#s': 'status'
-    },
-    ExpressionAttributeValues: {
-      ':s': {'S': 'For Sale'},
-      ':sid': {'S': currentUser}
+  // create loop for multiple zip code lists
+  var zipController = {
+    'next_start': 0,
+    'search_zips_again': true
+  };
+  while (zipController.search_zips_again)
+  {
+    // set up parameters including need for active "For Sale" listing from another seller
+    var params = {
+      TableName: "items",
+      IndexName: "status-index",
+      KeyConditionExpression: '#s = :s',
+      FilterExpression: "seller_id <> :sid",
+      ExpressionAttributeNames: {
+        '#s': 'status'
+      },
+      ExpressionAttributeValues: {
+        ':s': {'S': 'For Sale'},
+        ':sid': {'S': currentUser} 
+      }
     }
-  }
-  // Add location requirements
-  itemSearchAddLocation(params, body);
-  // Add price requirements
-  itemSearchAddPrice(params, body);
-  // Add tag requirements
-  itemSearchAddTags(params, body);
-console.log(JSON.stringify(params));
-  try {
-    var newItems = await ddbClient.send(new QueryCommand(params));
-  } catch (err) {
-    console.log(`ERROR getItemList with parameters ${JSON.stringify(params)} -- ${err}`);
+    // Add location requirements, and get feedback on if we must check more zips
+    zipController = itemSearchAddLocation(params, body, zipController);
+    // Add price requirements
+    itemSearchAddPrice(params, body);
+    // Add tag requirements
+    itemSearchAddTags(params, body);
+    console.log(JSON.stringify(params)); 
+    try {
+      var newItems = await ddbClient.send(new QueryCommand(params));
+    } catch (err) {
+      console.log(`ERROR getItemList with parameters ${JSON.stringify(params)} -- ${err}`);
+    }
+  returnItems = returnItems.concat(newItems['Items']);
   }
   const currentZip = 'location' in body ? body.location : '70116';
-  addDistanceToUser(currentZip, newItems);
-  addRelevanceToSearch(body, newItems);
-  returnItems = returnItems.concat(newItems['Items']);
+  addDistanceToUser(currentZip, {"Items": returnItems} );
+  addRelevanceToSearch(body, returnItems);
  console.log(`Search results: ${JSON.stringify(returnItems)}`);
 return returnItems;
 }
