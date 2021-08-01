@@ -243,7 +243,6 @@ function itemSearchAddLocation(params, body, zipController) {
   {
     return;
   }
-  console.log(`Good Zips: ${goodZips}$`);
   // until we are out of zip codes to look through, or we use 100 zips.
   var listZips = 0;
   zipNum = zipController.next_start;
@@ -306,7 +305,6 @@ function itemSearchAddTags(params, body){
     var fakePost = {'title': body['tags']};
     itemPostTagEnhancer(fakePost);
     const tags = fakePost['tags'];
-    console.log(tags);
     // make sure cleaning didnt remove all tags
     if (tags.length == 0)
       return;
@@ -344,7 +342,6 @@ function addRelevanceToSearch(body, returnItems) {
   itemPostTagEnhancer(fakePost);
   const tags = fakePost['tags']
   var itemTagCount;
-  console.log(returnItems);
   for (item of returnItems) {
     itemTagCount = 0;
     for (tag of item['tags']['L'])
@@ -382,6 +379,7 @@ async function getUserPhoto(user_id) {
   } catch(err) {
     console.log(`Error getting User Photo for user ${user_id}: ${err}`);
   }
+}
 
 async function getItemList(body) {
   /* getItemList
@@ -391,7 +389,6 @@ async function getItemList(body) {
    * Returns:
    *  List of DynamoDB return objects
    */
-  console.log(JSON.stringify(body));
   // set default current user to jbutt
   var currentUser = 'user_id' in body ? String(body.user_id) : 'jbutt';
   var returnItems = [];
@@ -443,7 +440,6 @@ async function getItemList(body) {
   const currentZip = 'location' in body ? body.location : '70116';
   addDistanceToUser(currentZip, {"Items": returnItems} );
   addRelevanceToSearch(body, returnItems);
- console.log(`Search results: ${JSON.stringify(returnItems)}`);
 return returnItems;
 }
 

@@ -40,7 +40,6 @@ router.get("/", async (req, res) => {
   try {
     console.log(JSON.stringify(req.params));
     let listings = await db.getItemList(req.params);
-    console.log("Got listings.  Now going to clean them up")
     res.status(201).json(db.makeListingsOutput(listings));
   } catch (err) {
     console.log(`ERROR getting item list: ${err}`);
