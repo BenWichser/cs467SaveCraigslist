@@ -15,6 +15,7 @@ const crypt = require("bcrypt");
 const _ = require("lodash");
 var zipcodes = require("zipcodes");
 var stopwords = require("stopword");
+const { filter } = require("lodash");
 
 async function hashPassword(password) {
   const salt = await crypt.genSalt(10);
@@ -221,6 +222,142 @@ function deleteItem(datatype, id) {
   }
 }
 
+function itemSearchAddLocation(params, body, zipController) {
+  /* itemSearchAddLocation
+   * Adds location specification to item search parameters.
+   * Accepts:
+   *  params (object): Object created for Dynamo query command
+   *  body (object): Body of search request
+   *  zipController (object): information on starting search index and whether or not
+   *    search should continue
+   * Returns:
+   *  Boolean on if more zip codes must be considered.  Also slters `params`
+   */ 
+  // set default location to home of PBS's "Zoom" if there is none already given
+  var zip = 'location' in body ? String(body.location) : '70116';
+  // set default distance to 5 miles
+  var radius = 'radius' in body ? Number(body.radius) : 5;
+  const goodZips = zipcodes.radius(zip, radius);
+  // if, for some crazy reason, we have no zip codes...bail
+  if (goodZips.length == 0)
+  {
+    return;
+  }
+  console.log(`Good Zips: ${goodZips}$`);
+  // until we are out of zip codes to look through, or we use 100 zips.
+  var listZips = 0;
+  zipNum = zipController.next_start;
+  while (zipNum < goodZips.length && listZips < 100)
+  {
+    if (zipNum % 100 == 0) {
+      params.ExpressionAttributeNames['#l'] = 'location';
+      params.FilterExpression += " AND #l in ("
+    } else
+    {
+      params.FilterExpression += ", "
+    }
+    params.FilterExpression += `:zip${zipNum}`;
+    params.ExpressionAttributeValues[`:zip${zipNum}`] = {'S': goodZips[zipNum]};
+    zipNum += 1;
+    listZips +=1;
+  }
+  params.FilterExpression += ")";
+  return {'next_start': zipNum, 'search_zips_again': !(zipNum == goodZips.length)};
+}
+
+function itemSearchAddPrice(params, body) {
+  /* itemSearchAddPrice
+   * Adds price requirements to item search parameters.
+   * Accepts:
+   *  params (object): Object created for Dynamo query command
+   *  body (object): Body of search request
+   * Returns:
+   *  Nothing.  Alters `params`
+   */
+  if ('minPrice' in body && 'maxPrice' in body) {
+    params.FilterExpression += "AND price between :minPrice and :maxPrice"; 
+    params.ExpressionAttributeValues[':minPrice'] = {'N': String(body.minPrice)};
+    params.ExpressionAttributeValues[':maxPrice'] = {'N': String(body.maxPrice)};
+  } else if ('minPrice' in body)
+  {
+    params.FilterExpression += "AND price >= :minPrice";
+    params.ExpressionAttributeValues[':minPrice'] = {'N': String(body.minPrice)};
+  } else if ('maxPrice' in body)
+  {
+    params.FilterExpression += "AND price <= :maxPrice";
+    params.ExpressionAttributeValues[':maxPrice'] = {'N': String(body.maxPrice)};
+  }
+ }
+
+function itemSearchAddTags(params, body){
+  /* itemSearchAddTags
+   * Adds price requirements to item search parameters.
+   * Accepts:
+   *  params (object): Object created for Dynamo query command
+   *  body (object): Body of search request
+   * Returns:
+   *  Nothing.  Alters `params`
+   */ 
+  // set default tags ot an empty string
+  var tags = 'search' in body ? String(body.search) : '';
+  if ('tags' in body)
+  {
+    // turn 'tags' from server into a list in format as stored on database
+    var fakePost = {'title': body['tags']};
+    itemPostTagEnhancer(fakePost);
+    const tags = fakePost['tags'];
+    console.log(tags);
+    // make sure cleaning didnt remove all tags
+    if (tags.length == 0)
+      return;
+    params.FilterExpression['#t'] =  'tags';
+    const tagNum = 0;
+    while (tags.length > 0)
+    {
+      //introduce tag logic clause in filter expression, or the logic connector "or"
+      if (tagNum == 0)
+      {
+        params.FilterExpression += "AND (";
+      } else
+      {
+        params.FilterExpression += " OR "
+      }
+      // add tag information to filter expression and the object of variables
+      tagNum += 1;
+      params.FilterExpression += `contains(#t, :tag${numTags}`;
+      params.ExpressionAttributeValues[`:tag${numTags}`] = {'S': tags.pop()};
+    }
+    params.FilterExpression += ")";
+  }
+}
+
+function addRelevanceToSearch(body, returnItems) {
+  /* Adds the number of tag hits
+   * Accepts:
+      body (object): search request parameters
+      returnItems: list of items to return
+   * Returns:
+      Nothing.  Modifies newItems
+   */
+  var fakeTitle = "tags" in body? body.tags : '';
+  var fakePost = {'title':  fakeTitle};
+  itemPostTagEnhancer(fakePost);
+  const tags = fakePost['tags']
+  var itemTagCount;
+  console.log(returnItems);
+  for (item of returnItems) {
+    itemTagCount = 0;
+    for (tag of item['tags']['L'])
+    {
+      if (tag in tags)
+      {
+        itemTagCount += 1;
+      }
+    }
+    item['num_matching_tags'] = itemTagCount;
+  }
+}
+
 async function getUserPhoto(user_id) {
   /* getUserPhoto
    * Returns a link to a user's photo
@@ -255,53 +392,59 @@ async function getItemList(body) {
    *  List of DynamoDB return objects
    */
   console.log(JSON.stringify(body));
-  // set default location to home of PBS's "Zoom" if there is none already given
-  var zip = 'location' in body ? String(body.location) : '70116';
-  // set default distance to 5 miles
-  var radius = 'radius' in body ? Number(body.radius) : 5;
-  // set default tags ot an empty string
-  var tags = 'search' in body ? String(body.search) : '';
   // set default current user to jbutt
   var currentUser = 'user_id' in body ? String(body.user_id) : 'jbutt';
-  console.log(currentUser);
-  const goodZips = zipcodes.radius(zip, radius);
-  console.log(`Good Zips: ${goodZips}$`);
-  // build Key Condition Expression and corresponding Attribute Values
-  /* Start by making the status = "For Sale".  Then build a parenthetical collection
-      of "OR" statements, one for each valid zip code.  Also place the correct values
-      in the ExpressionAttributeValues object.
-  */
   var returnItems = [];
-  while (goodZips.length > 0) {
-    let thisZip = goodZips.pop();
-    let params = {
-      TableName: 'items',
-      IndexName: 'status-location-index',
-      KeyConditionExpression: '#s = :s and #l = :zip',
+  // create loop for multiple zip code lists
+  var zipController = {
+    'next_start': 0,
+    'search_zips_again': true
+  };
+  while (zipController.search_zips_again)
+  {
+    // set up parameters including need for active "For Sale" listing from another seller
+    var params = {
+      TableName: "items",
+      IndexName: "status-index",
+      KeyConditionExpression: '#s = :s',
+      FilterExpression: "seller_id <> :sid",
       ExpressionAttributeNames: {
-        '#s': 'status',
-        '#l': 'location'
+        '#s': 'status'
       },
       ExpressionAttributeValues: {
-        ':s': {S: 'For Sale'},
-        ':zip': {S: thisZip}
+        ':s': {'S': 'For Sale'},
+        ':sid': {'S': currentUser} 
       }
     }
-    try {
-      const newItems = await ddbClient.send(new QueryCommand(params));
-      addDistanceToUser(zip, newItems);
+    // Add location requirements, and get feedback on if we must check more zips
+    zipController = itemSearchAddLocation(params, body, zipController);
+    // Add price requirements
+    itemSearchAddPrice(params, body);
+    // Add tag requirements
+    itemSearchAddTags(params, body);
+    // Set up for multiple queries, until all results have been returned
+    var moreRecordsToSearch = true;
+    while (moreRecordsToSearch) {
+      try {
+        console.log(JSON.stringify(params)); 
+        var newItems = await ddbClient.send(new QueryCommand(params));
+        // check to see if we must search again, and adjust parameters
+        if ('LastEvaluatedKey' in newItems && newItems.LastEvaluatedKey != null) {
+          params.ExclusiveStartKey = newItems.LastEvaluatedKey;
+        } else {
+          moreRecordsToSearch = false;
+        }
+      } catch (err) {
+        console.log(`ERROR getItemList with parameters ${JSON.stringify(params)} -- ${err}`);
+      }
       returnItems = returnItems.concat(newItems['Items']);
-      console.log(`Items for zip ${thisZip}: ${newItems.Items}`)
-    } catch (err) {
-      console.log(`Error getItemList with parameters ${params} -- ${err}`);
     }
   }
-  // Remove our own items
-  returnItems = returnItems.filter( item => 
-    item["seller_id"]["S"] != currentUser
-    );
-  console.log(`Search results: ${JSON.stringify(returnItems)}`);
-  return returnItems;
+  const currentZip = 'location' in body ? body.location : '70116';
+  addDistanceToUser(currentZip, {"Items": returnItems} );
+  addRelevanceToSearch(body, returnItems);
+ console.log(`Search results: ${JSON.stringify(returnItems)}`);
+return returnItems;
 }
 
 function itemPostTagEnhancer(body) {

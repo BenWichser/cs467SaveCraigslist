@@ -43,7 +43,7 @@ router.get("/", async (req, res) => {
     console.log("Got listings.  Now going to clean them up")
     res.status(201).json(db.makeListingsOutput(listings));
   } catch (err) {
-    console.log(`Error getting item list: ${err}`);
+    console.log(`ERROR getting item list: ${err}`);
   }
 });
 
