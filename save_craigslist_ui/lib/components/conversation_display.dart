@@ -6,9 +6,9 @@ import '../screens/conversation_screen.dart';
 
 class ConversationDisplay extends StatelessWidget {
   final Conversation conversation;
-  //final void Function() updateItems;
+  final void Function() updateConversations;
 
-  const ConversationDisplay({ Key? key, required this.conversation}) : super(key: key);
+  const ConversationDisplay({ Key? key, required this.conversation, required this.updateConversations}) : super(key: key);
 
   //Individual Display for each conversation
   //Will display other user's photo and id, and a snippet of the most recent message
@@ -20,7 +20,7 @@ class ConversationDisplay extends StatelessWidget {
         Navigator.push<void>(
           context,
           MaterialPageRoute<void>(
-            builder: (BuildContext context) => ConversationScreen(conversation: conversation),
+            builder: (BuildContext context) => ConversationScreen(conversation: conversation, updateConversations : updateConversations)
           ),
         );
         print('go to conversation screen');

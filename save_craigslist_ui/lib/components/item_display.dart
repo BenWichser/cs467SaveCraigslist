@@ -37,17 +37,13 @@ class ItemDisplay extends StatelessWidget {
               width: 50,
               fit: BoxFit.cover
             ),
-            //Placeholder(
-            //  fallbackHeight: 50,
-            //  fallbackWidth: 50
-            //),
             Padding(
               padding: EdgeInsets.all(10), 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(item.title),
-                  Text('\$${item.price}')
+                  Text('\$${item.price.toStringAsFixed(2)}')
                 ])
             )
           ])

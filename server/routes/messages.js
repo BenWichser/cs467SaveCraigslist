@@ -10,11 +10,12 @@ const router = express.Router();
 router.use(bodyParser.json());
 
 router.post("/:sender_id/:receiver_id", async (req, res) => {
+
   let new_message = {
     sender_id: req.params.sender_id,
     receiver_id: req.params.receiver_id,
     content: req.body.content,
-    date_sent: _.now(),
+    date_sent: _.now().toString(),
     id: req.params.sender_id + "_" + req.params.receiver_id + "_" + uuidv4(),
   };
   db.createItem("messages", aws.DynamoDB.Converter.marshall(new_message));
