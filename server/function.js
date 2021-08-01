@@ -273,19 +273,19 @@ function itemSearchAddPrice(params, body) {
    *  body (object): Body of search request
    * Returns:
    *  Nothing.  Alters `params`
-   */ 
+   */
   if ('minPrice' in body && 'maxPrice' in body) {
-    params.FilterExpression += "price between :minPrice and :maxPrice"; 
-    params.ExpressionAttributeValues[':minPrice'] = {'N': Number(body.minPrice)};
-    params.ExpressionAttributeValues[':maxPrice'] = {'N': Number(body.maxPrice)};
+    params.FilterExpression += "AND price between :minPrice and :maxPrice"; 
+    params.ExpressionAttributeValues[':minPrice'] = {'N': String(body.minPrice)};
+    params.ExpressionAttributeValues[':maxPrice'] = {'N': String(body.maxPrice)};
   } else if ('minPrice' in body)
   {
-    params.FilterExpression += "price >= :minPrice";
-    params.ExpressionAttributeValues[':minPrice'] = {'N': Number(body.minPrice)};
+    params.FilterExpression += "AND price >= :minPrice";
+    params.ExpressionAttributeValues[':minPrice'] = {'N': String(body.minPrice)};
   } else if ('maxPrice' in body)
   {
-    params.FilterExpression += "price <= :maxPrice";
-    params.ExpressionAttributeValues[':maxPrice'] = {'N': Number(body.maxPrice)};
+    params.FilterExpression += "AND price <= :maxPrice";
+    params.ExpressionAttributeValues[':maxPrice'] = {'N': String(body.maxPrice)};
   }
  }
 
