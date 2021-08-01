@@ -397,13 +397,23 @@ async function getItemList(body) {
     itemSearchAddPrice(params, body);
     // Add tag requirements
     itemSearchAddTags(params, body);
-    console.log(JSON.stringify(params)); 
-    try {
-      var newItems = await ddbClient.send(new QueryCommand(params));
-    } catch (err) {
-      console.log(`ERROR getItemList with parameters ${JSON.stringify(params)} -- ${err}`);
+    // Set up for multiple queries, until all results have been returned
+    var moreRecordsToSearch = true;
+    while (moreRecordsToSearch) {
+      try {
+        console.log(JSON.stringify(params)); 
+        var newItems = await ddbClient.send(new QueryCommand(params));
+        // check to see if we must search again, and adjust parameters
+        if ('LastEvaluatedKey' in newItems && newItems.LastEvaluatedKey != null) {
+          params.ExclusiveStartKey = newItems.LastEvaluatedKey;
+        } else {
+          moreRecordsToSearch = false;
+        }
+      } catch (err) {
+        console.log(`ERROR getItemList with parameters ${JSON.stringify(params)} -- ${err}`);
+      }
+      returnItems = returnItems.concat(newItems['Items']);
     }
-  returnItems = returnItems.concat(newItems['Items']);
   }
   const currentZip = 'location' in body ? body.location : '70116';
   addDistanceToUser(currentZip, {"Items": returnItems} );
