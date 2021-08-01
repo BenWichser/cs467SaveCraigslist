@@ -53,11 +53,16 @@ router.get("/users/:user_id", async (req, res)=> {
 })
 
 router.get("/:item_id", async (req, res) => {
-  let item = await db.getItem("items", req.params.item_id);
-  if (_.isUndefined(item.Item)) {
-    return res.status(404).json({ Error: "No item with that item_id exists" });
+  try{
+    let item = await db.getItem("items", req.params.item_id);
+    if (_.isUndefined(item.Item)) {
+      return res.status(404).json({ Error: "No item with that item_id exists" });
+    }
+    item.Item['photo'] = await db.getUserPhoto(item.Item.seller_id.S)
+    res.status(201).json(aws.DynamoDB.Converter.unmarshall(item.Item));
+  } catch (err) {
+    console.log(`Error getting /items/${item_id}`);
   }
-  res.status(201).json(aws.DynamoDB.Converter.unmarshall(item.Item));
 });
 
 router.put(
