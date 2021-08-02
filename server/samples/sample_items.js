@@ -113,9 +113,9 @@ const sampleItemD = {
         */
     ],
     tags: [
-        {'S': 'danish'},
-        {'S': 'food'},
-        {'S': 'cheese'}
+        {'S': 'over'},
+        {'S': 'glasses'},
+        {'S': 'sunglasses'}
     ]
 };
 
@@ -149,7 +149,6 @@ const sampleItemF = {
     status: 'For Sale',
     photos: [],
     tags: [
-        {'S': 'very'},
         {'S': 'close'},
         {'S': 'item'}
     ]
@@ -235,7 +234,6 @@ const sampleItemK = {
     price: '25',
     photos: [],
     tags: [
-        { 'S': 'very'},
         { 'S': 'far' },
         { 'S': 'item'}
     ]

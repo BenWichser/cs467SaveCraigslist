@@ -298,7 +298,6 @@ function itemSearchAddTags(params, body){
    *  Nothing.  Alters `params`
    */ 
   // set default tags ot an empty string
-  var tags = 'search' in body ? String(body.search) : '';
   if ('tags' in body)
   {
     // turn 'tags' from server into a list in format as stored on database
@@ -308,22 +307,22 @@ function itemSearchAddTags(params, body){
     // make sure cleaning didnt remove all tags
     if (tags.length == 0)
       return;
-    params.FilterExpression['#t'] =  'tags';
-    const tagNum = 0;
+    params.ExpressionAttributeNames['#t'] =  'tags';
+    var tagNum = 0;
     while (tags.length > 0)
     {
       //introduce tag logic clause in filter expression, or the logic connector "or"
       if (tagNum == 0)
       {
-        params.FilterExpression += "AND (";
+        params.FilterExpression += " AND (";
       } else
       {
         params.FilterExpression += " OR "
       }
       // add tag information to filter expression and the object of variables
       tagNum += 1;
-      params.FilterExpression += `contains(#t, :tag${numTags}`;
-      params.ExpressionAttributeValues[`:tag${numTags}`] = {'S': tags.pop()};
+      params.FilterExpression += `contains(#t, :tag${tagNum})`;
+      params.ExpressionAttributeValues[`:tag${tagNum}`] = {'S': tags.pop()};
     }
     params.FilterExpression += ")";
   }
@@ -340,18 +339,18 @@ function addRelevanceToSearch(body, returnItems) {
   var fakeTitle = "tags" in body? body.tags : '';
   var fakePost = {'title':  fakeTitle};
   itemPostTagEnhancer(fakePost);
-  const tags = fakePost['tags']
+  const searchTags = fakePost['tags']
   var itemTagCount;
   for (item of returnItems) {
     itemTagCount = 0;
-    for (tag of item['tags']['L'])
+    for (tag of item.tags.L)
     {
-      if (tag in tags)
+      if (searchTags.includes(tag.S))
       {
         itemTagCount += 1;
       }
     }
-    item['num_matching_tags'] = itemTagCount;
+    item['num_matching_tags'] = {'N' : itemTagCount};
   }
 }
 
@@ -424,7 +423,6 @@ async function getItemList(body) {
     var moreRecordsToSearch = true;
     while (moreRecordsToSearch) {
       try {
-        console.log(JSON.stringify(params)); 
         var newItems = await ddbClient.send(new QueryCommand(params));
         // check to see if we must search again, and adjust parameters
         if ('LastEvaluatedKey' in newItems && newItems.LastEvaluatedKey != null) {
