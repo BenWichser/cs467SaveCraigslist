@@ -168,7 +168,8 @@ Widget sellerInfo(item, BuildContext context) {
         dynamic sellerJSONString = snapshot.data;
         Map sellerJSON = jsonDecode(sellerJSONString.body);
 
-        //debugPrint('${sellerJSON}', wrapWidth: 1024);
+        print('Getting seller info from item route:');
+        debugPrint('${sellerJSON}', wrapWidth: 1024);
 
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -187,7 +188,7 @@ Widget sellerInfo(item, BuildContext context) {
             ElevatedButton(
               onPressed: () {
                 Conversation conversation = Conversation(
-                 receiver_id: sellerJSON['id'],
+                 receiver_id: sellerJSON['seller_id'],
                  receiverPhoto: sellerJSON['photo'],
                  mostRecentMessage: Message.nullMessage()
                 );

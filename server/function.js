@@ -382,6 +382,7 @@ async function getUserPhoto(user_id) {
   } catch(err) {
     console.log(`Error getting User Photo for user ${user_id}: ${err}`);
   }
+}
 
 async function getItemList(body) {
   /* getItemList
@@ -391,6 +392,7 @@ async function getItemList(body) {
    * Returns:
    *  List of DynamoDB return objects
    */
+  console.log('here');
   console.log(JSON.stringify(body));
   // set default current user to jbutt
   var currentUser = 'user_id' in body ? String(body.user_id) : 'jbutt';
