@@ -389,6 +389,7 @@ async function getItemList(body) {
    * Returns:
    *  List of DynamoDB return objects
    */
+
   // set default current user to jbutt
   var currentUser = 'user_id' in body ? String(body.user_id) : 'jbutt';
   var returnItems = [];

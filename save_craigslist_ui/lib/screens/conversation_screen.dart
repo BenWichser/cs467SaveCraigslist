@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -22,8 +24,6 @@ class ConversationScreen extends StatefulWidget {
 class _ConversationScreenState extends State<ConversationScreen> {
   @override
   Widget build(BuildContext context) {
-    print('${s3UserPrefix}/${widget.conversation.receiverPhoto}');
-
     return GestureDetector(
       onTap: () {SystemChannels.textInput.invokeMethod('TextInput.hide');},
       child: Scaffold(
@@ -40,11 +40,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
             ]
           )
         ),
-        body: previousMessages(),
+        body: previousMessages(MediaQuery.of(context).viewInsets.bottom),
         bottomNavigationBar: Transform.translate(
           offset: Offset(0.0, -1 * MediaQuery.of(context).viewInsets.bottom),
-          child: BottomAppBar(child: newMessageField()
-          )
+          child: newMessageField()
         )
       )
     );
@@ -85,14 +84,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
   }
 
   void sendMessage(String messageContent) async {
-    print('sending message:');
-    
 
     var newMessage = {
       'content': messageContent,
     };
-
-    print(newMessage);
 
     var response = await http.post(Uri.parse('${hostURL}:${port}/messages/${currentUser.id}/${widget.conversation.receiver_id}'),
     headers: {"Content-Type": "application/json"},
@@ -108,19 +103,33 @@ class _ConversationScreenState extends State<ConversationScreen> {
     }
   }
 
-  Widget previousMessages(){
+  Widget previousMessages(double keyboardHeight){
     return FutureBuilder(
       future: http.get(Uri.parse('${hostURL}:${port}/messages/${currentUser.id}/${widget.conversation.receiver_id}')),
       builder: (context, snapshot) {
         if (snapshot.hasData){
           dynamic jsonList = snapshot.data;
-          debugPrint(jsonList.body, wrapWidth: 1024);
+
+          //debugPrint(jsonList.body, wrapWidth: 1024);
             
           processMessages(jsonDecode(jsonList.body));
           List<MessageDisplay> messageDisplays = createListOfMessageDisplays();
 
-          return ListView(children: messageDisplays);
+          //The text field is translated up to stay on top of the keyboard. This was
+          //covering some of the messages, so the messages are in a sizedbox sized to stay
+          //above the keyboard and text field. 
 
+          return SizedBox(
+              width: MediaQuery.of(context).size.width,
+              height: keyboardHeight == 0 
+                ? MediaQuery.of(context).size.height 
+                : (MediaQuery.of(context).size.height - keyboardHeight - 200),
+              child: ListView(
+                shrinkWrap: true,
+                reverse: true,
+                children: messageDisplays
+              )
+          );
         }
         else if (snapshot.hasError){
           return Text('Error loading conversation'); 
@@ -157,7 +166,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
     for (Message message in widget.conversation.messages!){
       MessageDisplay newMessageDisplay = MessageDisplay(message: message);
-      messageDisplays.add(newMessageDisplay);
+      messageDisplays.insert(0, newMessageDisplay);
     }
 
     return messageDisplays;
