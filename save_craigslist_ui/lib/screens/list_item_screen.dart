@@ -96,8 +96,12 @@ class _ItemFormState extends State<ItemForm> {
 
                           //Reset fields and hide keyboard
                           _formKey.currentState?.reset();
-                          SystemChannels.textInput
-                              .invokeMethod('TextInput.hide');
+                          SystemChannels.textInput.invokeMethod('TextInput.hide');
+
+                          //Clear photo
+                          setState((){
+                            imageFile = null;
+                          });
                         }
                       },
                       child: const Text('Post Item!'),

@@ -50,7 +50,8 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
           if (snapshot.hasData){
 
             dynamic jsonList = snapshot.data;
-            //debugPrint(jsonList.body, wrapWidth: 1024);
+            print('MY LISTINGS');
+            debugPrint(jsonList.body, wrapWidth: 1024);
 
             if (jsonList.body.length == 0){
               return Text('You don\'t have any items listed.');
