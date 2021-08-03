@@ -30,7 +30,8 @@ router.post(
   (req, res) => {
     db.itemPostTagEnhancer(req.body);
     let new_id = uuidv4();
-    let new_item = _.extend(req.body, { id: new_id });
+    let postTime = _.now().toString();
+    let new_item = _.extend(req.body, { id: new_id }, {date_added: postTime});
     db.createItem("items", aws.DynamoDB.Converter.marshall(new_item));
     res.status(201).json({ id: new_id });
   }
@@ -48,7 +49,7 @@ router.get("/", async (req, res) => {
 
 router.get("/users/:user_id", async (req, res)=> {
   let listings = await db.getAllUserItems(req.params.user_id, null);
-  res.status(201).json(db.makeListingsOutput(listings.Items));
+  res.status(201).json(db.makeListingsOutput(listings));
 })
 
 router.get("/:item_id", async (req, res) => {

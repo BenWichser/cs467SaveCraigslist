@@ -159,22 +159,34 @@ async function getOpeningItemList(location, num) {
 }
 
 
-async function getAllUserItems(userId, lastEval) {
-  const params = {
+async function getAllUserItems(userId, lastEval = null) {
+  console.log(`getAllUserItems: getting items for user ${userId}`);
+  var params = {
     TableName: "items",
-    FilterExpression: "seller_id = :s",
+    IndexName: "seller_id-date_added-index",
+    KeyConditionExpression: 'seller_id = :sid',
     ExpressionAttributeValues: {
-      ":s": { S: userId },
-    },
-    Limit: 10,
-    ExclusiveStartKey: lastEval,
-  };
-  try {
-    const action = await ddbClient.send(new ScanCommand(params));
-    return action;
-  } catch (err) {
-    console.log(err);
+      ':sid': {'S': userId} 
+    }
   }
+  var moreRecordsToSearch = true;
+  var returnItems = [];
+  while (moreRecordsToSearch)
+  {
+    try {
+      var newItems = await ddbClient.send(new QueryCommand(params));
+      if ('LastEvaluatedKey' in newItems && newItems.LastEvaluatedKey != null) {
+        params.ExclusiveStartKey = newItems.LastEvaluatedKey;
+      } else {
+        moreRecordsToSearch = false;
+      }
+    } catch (err) {
+      console.log(
+        `ERROR getAllUserItems -- Error getting items for user ${userId} with parameters ${JSON.stringify(params)}: ${err}`);
+    }
+    returnItems = returnItems.concat(newItems['Items']);
+  }
+  return returnItems;
 }
 
 async function queryMessages(sender, receiver) {
