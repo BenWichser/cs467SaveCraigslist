@@ -1,7 +1,8 @@
-const hostURL = 'http://localhost';
-//const hostURL = 'http://10.0.2.2';
+//const hostURL = 'http://localhost';
+//const hostURL = 'http://localhost';
+const hostURL = 'http://10.0.2.2';
 //const hostURL = 'http://benwichser.com';
-//const hostURL = 'http://172.16.1.166';
+//const hostURL = 'http://192.168.1.139';
 
 
 const port = '8080';

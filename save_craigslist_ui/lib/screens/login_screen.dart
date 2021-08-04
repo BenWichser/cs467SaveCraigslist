@@ -13,7 +13,7 @@ class LogInScreen extends StatelessWidget {
     return GestureDetector( //Hide keyboard when clicked outside text fields
       onTap: () {SystemChannels.textInput.invokeMethod('TextInput.hide');},
       child: Scaffold(
-        appBar: AppBar(title: Center(child: Text('Gurt\'s List'))),
+        appBar: AppBar(title: Center(child: Text('Craigslist++'))),
         body: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
