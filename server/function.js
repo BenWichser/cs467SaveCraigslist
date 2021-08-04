@@ -6,6 +6,7 @@ var {
   BatchGetItemCommand,
   ScanCommand,
   QueryCommand,
+  UpdateItemCommand,
 } = require("@aws-sdk/client-dynamodb");
 var aws = require('aws-sdk');
 // ddbClient construction -- created from AWS documentation but not provided in
@@ -16,7 +17,6 @@ const _ = require("lodash");
 var zipcodes = require("zipcodes");
 var stopwords = require("stopword");
 const { filter } = require("lodash");
-
 async function hashPassword(password) {
   const salt = await crypt.genSalt(10);
   const hash = await crypt.hash(password, salt);
@@ -234,6 +234,65 @@ function deleteItem(datatype, id) {
   }
 }
 
+async function saveUserSearchTerms(body) {
+  /* Saves user's search terms.  Assumes search terms have already been tag-filtered.
+   * Accepts:
+      body (object): User's search query
+   * Returns:
+       Null.  Altered userId's entry in Dynamo.
+  */
+  // Return if empty list.  This shouldn't ever be triggered.
+  if ( !('tags' in body) || body.tags.length === 0)
+  {
+    return;
+  }
+  // turn search terms into tags to save
+  var fakePost = {'title': body.tags};
+  itemPostTagEnhancer(fakePost);
+  var tagList = fakePost.tags;
+  console.log(tagList);
+  const saveTagLimit = 200;  // number of recent search tags saved
+  // get list of recent searches.  Assumes unique hit with user_id
+  try {
+    const searchHistoryParams = {
+      TableName: "users",
+      KeyConditionExpression: 'id = :uid',
+      ExpressionAttributeValues: {
+      ':uid': {'S': body.user_id} 
+      },
+      ProjectionExpression : 'recent_searches',
+    }
+    var searchHistory = await ddbClient.send(new QueryCommand(searchHistoryParams));
+    searchHistory = 'recent_searches' in searchHistory.Items[0] ? 
+        searchHistory.Items[0].recent_searches.L : 
+        [];
+    // add each tag to the recent_searches list, removing any tags needed to limit list to size saveTagLimit
+    for (searchTag of tagList) {
+      while (searchHistory.length >= saveTagLimit)
+        searchHistory.shift();
+      searchHistory.push({'S': searchTag});
+    }
+    console.log(searchHistory);
+   } catch (err) {
+    console.log(`ERRR saveUserSearchTerms -- Error getting search history for user ${body.user_id}: ${err}`);
+  }
+ // send search history back to AWS for user
+  try {
+    const newSearchHistoryParams = {
+      TableName: "users",
+      Key: { "id": {'S' : body.user_id}},
+      UpdateExpression: "SET recent_searches = :rs",
+      ExpressionAttributeValues: {
+        ":rs": {'L': searchHistory}
+      },
+    }
+    await ddbClient.send(new UpdateItemCommand(newSearchHistoryParams));
+  } catch(err) {
+    console.log(`Error saveUserSearchTerms -- Error saving search history for user ${body.user_id}: ${err}`);
+  }
+}
+
+
 function itemSearchAddLocation(params, body, zipController) {
   /* itemSearchAddLocation
    * Adds location specification to item search parameters.
@@ -318,7 +377,9 @@ function itemSearchAddTags(params, body){
     const tags = fakePost['tags'];
     // make sure cleaning didnt remove all tags
     if (tags.length == 0)
+    {
       return;
+    }
     params.ExpressionAttributeNames['#t'] =  'tags';
     var tagNum = 0;
     while (tags.length > 0)
@@ -404,6 +465,9 @@ async function getItemList(body) {
   // set default current user to jbutt
   var currentUser = 'user_id' in body ? String(body.user_id) : 'jbutt';
   var returnItems = [];
+  if (!('tags' in body) || body.tags === '') {
+    // returnItems = getPersonalizedSearch(body);
+  }
   // create loop for multiple zip code lists
   var zipController = {
     'next_start': 0,
@@ -509,6 +573,7 @@ module.exports = {
   hashPassword,
   updateItem,
   queryMessages,
+  saveUserSearchTerms,
   getUserPhoto,
   getAllUserItems,
   itemPostTagEnhancer,

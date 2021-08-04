@@ -10,7 +10,7 @@ const userTemplate = {
     'items_bought': 'L',        // [ {'S': id }, ]
     'current_listings': 'L',    // [ {'S': id }, ]
     'past_listings': 'L',       // [ {'S': id }, ]
-    'recent_searches': 'L'      // [ {'M': {'search': 'S', 'most_recent_search': S}}, ]
+    'recent_searches': 'L'      // [ { 'S': recent_tag}, {'S'}: other_recent_tag}, ]
 }
 
 const itemTemplate = {
