@@ -357,54 +357,21 @@ function itemSearchAddPrice(params, body) {
   }
  }
 
-async function itemSearchAddTags(params, body, needSuggestions = false){
+async function itemSearchAddTags(params, body){
   /* itemSearchAddTags
    * Adds price requirements to item search parameters.
    * Accepts:
    *  params (object): Object created for Dynamo query command
    *  body (object): Body of search request
-   *  needSuggestions (bool): Whether or not we need to make suggestions from user search history
    * Returns:
    *  Nothing.  Alters `params`
    */ 
   // version 0: the user entered no search term and we don't need suggestions
-  if ( !('tags' in body  || needSuggestions)) {
+  if ( !('tags' in body)) {
     return;
   }
-  // version 1: the user enters a search term
-  if (needSuggestions === false)
-  {
-    // turn 'tags' from server into a list in format as stored on database
-    var fakePost = {'title': body['tags']};
-  } else {
-  // version 2: the user did not enter a search term, but we need suggestions
-    const currentUser = 'user_id' in body ? body.user_id : 'jbutt'; // default...
-    try {
-      var getTagsParams = {
-        TableName: "users",
-        KeyConditionExpression: '#i = :id',
-        ExpressionAttributeNames: { '#i': 'id'},
-        ExpressionAttributeValues: {':id': {'S': currentUser}},
-        ProjectionExpression: "recent_searches"
-      };
-      var suggestedTags = await ddbClient.send(new QueryCommand(getTagsParams));
-      suggestedTags = 'recent_searches' in suggestedTags.Items[0] && 
-          'L' in suggestedTags.Items[0].recent_searches ?
-        suggestedTags.Items[0].recent_searches.L :
-        [];
-      // turn return into list of just strings
-      suggestedTags.forEach( (item, index) => {
-        suggestedTags[index] = item.S;
-      });
-      // save this list for adding relevance later
-      body.suggestedTags = suggestedTags;
-      // make tag list uniques
-      suggestedTags = [...new Set(suggestedTags)];
-      var fakePost = {'tags': suggestedTags, 'title': ''};
-    } catch (err) {
-      console.log(`ERROR itemSearchAddTags -- trying to make tags of suggestions for user ${currentUser}: ${err}`);
-    }
-  }
+  // turn 'tags' from server into a list in format as stored on database
+  var fakePost = {'title': body['tags']};
   itemPostTagEnhancer(fakePost);
   const tags = fakePost['tags'];
  // make sure cleaning didnt remove all tags
@@ -432,7 +399,7 @@ async function itemSearchAddTags(params, body, needSuggestions = false){
   params.FilterExpression += ")";
 }
 
-function addRelevanceToSearch(body, returnItems) {
+async function addRelevanceToSearch(body, returnItems) {
   /* Adds the number of tag hits, with special multi-counting for suggested searches
    * Accepts:
       body (object): search request parameters
@@ -440,15 +407,34 @@ function addRelevanceToSearch(body, returnItems) {
    * Returns:
       Nothing.  Modifies newItems
    */
-  // case 1:  there were suggested tags to use
-  if ('suggestedTags' in body) {
-    var searchTags = body.suggestedTags;
-  } else {
-    // case 2: there were not suggested tags, so we get tags from search
-    var fakeTitle = "tags" in body? body.tags : '';
-    var fakePost = {'title':  fakeTitle};
-    itemPostTagEnhancer(fakePost);
-    var searchTags = fakePost['tags'];
+  // start by trying to use search tags
+  var fakeTitle = "tags" in body? body.tags : '';
+  var fakePost = {'title':  fakeTitle};
+  itemPostTagEnhancer(fakePost);
+  var searchTags = fakePost['tags'];
+  // if no meaningful tags, we use user's search history instead
+  if (searchTags.length === 0){
+    const currentUser = 'user_id' in body ? body.user_id : 'jbutt'; // default...
+    try {
+      var getTagsParams = {
+        TableName: "users",
+        KeyConditionExpression: '#i = :id',
+        ExpressionAttributeNames: { '#i': 'id'},
+        ExpressionAttributeValues: {':id': {'S': currentUser}},
+        ProjectionExpression: "recent_searches"
+      };
+      var searchTags = await ddbClient.send(new QueryCommand(getTagsParams));
+      searchTags = 'recent_searches' in searchTags.Items[0] && 
+          'L' in searchTags.Items[0].recent_searches ?
+        searchTags.Items[0].recent_searches.L :
+        [];
+      // turn return into list of just strings
+      searchTags.forEach( (item, index) => {
+        searchTags[index] = item.S;
+      });
+    } catch (err) {
+      console.log(`ERROR itemSearchAddTags -- trying to make tags of suggestions for user ${currentUser}: ${err}`);
+    }
   }
   // change searchTags to object counting occurrences
   const searchtagMap = searchTags.reduce(function (acc, curr) {
@@ -494,63 +480,6 @@ async function getUserPhoto(user_id) {
   }
 }
 
-async function getItemSuggestions(body) {
-  /* Retrieves personalized item recommendations for user.
-   *  Meant to be called only when user enters no search string.
-   * Accepts:
-   *  body (object): User search request
-   * Returns:
-   *  List of suggested items, with relevance added.
-   */
-  // create loop for multiple zip code lists
-  var returnItems = [];
-  const currentUser = 'user_id' in body ? body.user_id : 'jbutt'; // set default
-  var zipController = {
-    'next_start': 0,
-    'search_zips_again': true
-  };
-  while (zipController.search_zips_again)
-  {
-    // set up parameters including need for active "For Sale" listing from another seller
-    var params = {
-      TableName: "items",
-      IndexName: "status-index",
-      KeyConditionExpression: '#s = :s',
-      FilterExpression: "seller_id <> :sid",
-      ExpressionAttributeNames: {
-        '#s': 'status'
-      },
-      ExpressionAttributeValues: {
-        ':s': {'S': 'For Sale'},
-        ':sid': {'S': currentUser} 
-      }
-    }
-    // Add location requirements, and get feedback on if we must check more zips
-    zipController = itemSearchAddLocation(params, body, zipController);
-    // Add price requirements
-    itemSearchAddPrice(params, body);
-    // Add tag requirements, using user's search history
-    itemSearchAddTags(params, body, true);
-    // Set up for multiple queries, until all results have been returned
-    var moreRecordsToSearch = true;
-    while (moreRecordsToSearch) {
-      try {
-        var newItems = await ddbClient.send(new QueryCommand(params));
-        // check to see if we must search again, and adjust parameters
-        if ('LastEvaluatedKey' in newItems && newItems.LastEvaluatedKey != null) {
-          params.ExclusiveStartKey = newItems.LastEvaluatedKey;
-        } else {
-          moreRecordsToSearch = false;
-        }
-      } catch (err) {
-        console.log(`ERROR getItemSuggestions for user ${currentUser}: ${err}`);
-      }
-      returnItems = returnItems.concat(newItems['Items']);
-    }
-  }
-return returnItems;
-}  
-    
 async function getItemList(body) {
   /* getItemList
    * Returns a list of items according to the specified criteria.
@@ -563,9 +492,6 @@ async function getItemList(body) {
   // set default current user to jbutt
   var currentUser = 'user_id' in body ? String(body.user_id) : 'jbutt';
   var returnItems = [];
-  if (!('tags' in body) || body.tags === '') {
-    returnItems = await getItemSuggestions(body);
-  }
   // create loop for multiple zip code lists
   var zipController = {
     'next_start': 0,
@@ -592,7 +518,7 @@ async function getItemList(body) {
     // Add price requirements
     itemSearchAddPrice(params, body);
     // Add tag requirements
-    itemSearchAddTags(params, body, false); // do not add suggestions
+    itemSearchAddTags(params, body);
     // Set up for multiple queries, until all results have been returned
     var moreRecordsToSearch = true;
     while (moreRecordsToSearch) {
@@ -607,17 +533,13 @@ async function getItemList(body) {
       } catch (err) {
         console.log(`ERROR getItemList with parameters ${JSON.stringify(params)} -- ${err}`);
       }
-      // add unique new items to return list
-      newItems['Items'].forEach( (item) => {
-        if (!(returnItems.some((ele) => ele.id.S == item.id.S))) {
-          returnItems.push(item);
-        }
-      });
+     // add new items to return list
+     returnItems = returnItems.concat(newItems["Items"]);
     }
   }
   const currentZip = 'location' in body ? body.location : '70116';
   addDistanceToUser(currentZip, {"Items": returnItems} );
-  addRelevanceToSearch(body, returnItems);
+  await addRelevanceToSearch(body, returnItems);
 return returnItems;
 }
 
@@ -663,7 +585,6 @@ function itemPostTagEnhancer(body) {
   );
   // fix the body (ody ody ody) 'tags' value
   body['tags'] = improvedTags;
-
 }
 
 module.exports = {
