@@ -20,12 +20,17 @@ router.post(
   customValidation.validate,
   async (req, res) => {
     let password = await db.hashPassword(req.body.password);
-    db.createItem("users", {
-      email: { S: req.body.email },
-      id: { S: req.body.username },
-      password: { S: password },
-      zip: { S: req.body.zip },
-    });
+    let newUserParams = {
+        email: { S: req.body.email },
+        id: { S: req.body.username },
+        password: { S: password },
+        zip: { S: req.body.zip },
+    };
+    if ('photo' in req.body)
+    {
+      newUserParams.photo = { S: req.body.photo};
+    }
+    await db.createItem("users", newUserParams);
     res.status(201).send();
   }
 );

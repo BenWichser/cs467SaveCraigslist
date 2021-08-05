@@ -24,7 +24,7 @@ router.post(
       return res.status(400).json({error: "Incorrect file type"});
     }
     const fileName = uuidv4();
-    const bucketName = 'savecraigslistitems';     //TODO: expand to be items or usersrs
+    const bucketName = 'savecraigslist' + req.body.table;     //TODO: expand to be items or usersrs
     const params = {
         Bucket: bucketName,
         Key: fileName + "." + fileType,

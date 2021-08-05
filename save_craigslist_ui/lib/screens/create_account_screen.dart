@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -12,19 +11,18 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cross_file/cross_file.dart';
 
 class CreateAccountScreen extends StatelessWidget {
-  const CreateAccountScreen({ Key? key }) : super(key: key);
+  const CreateAccountScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Create New Account')),
-      body: Center(child: NewAccountForm())
-    );
+        appBar: AppBar(title: Text('Create New Account')),
+        body: Center(child: NewAccountForm()));
   }
 }
 
 class NewAccountForm extends StatefulWidget {
-  const NewAccountForm({ Key? key }) : super(key: key);
+  const NewAccountForm({Key? key}) : super(key: key);
 
   @override
   _NewAccountFormState createState() => _NewAccountFormState();
@@ -36,12 +34,11 @@ class _NewAccountFormState extends State<NewAccountForm> {
   final picker = ImagePicker();
   var imagePath = null;
   var imageFile = null;
-  
+
   void initState() {
     SystemChannels.textInput.invokeMethod('TextInput.hide');
     super.initState();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -50,57 +47,50 @@ class _NewAccountFormState extends State<NewAccountForm> {
     TextEditingController emailController = TextEditingController();
     TextEditingController zipController = TextEditingController();
 
-
     return SingleChildScrollView(
-      child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            GetPhoto(),
-            SquareTextField(
-              fieldController: usernameController,
-              hintText: 'Username'),
-            SquareTextField(
-              fieldController: passwordController,
-              hintText: 'Password'),
-            SquareTextField(
-              fieldController: emailController,
-              hintText: 'Email Address'),
-            SquareTextField(
-              fieldController: zipController,
-              hintText: 'Zip Code'),          
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-
-                  if(_formKey.currentState!.validate()){
-                    /* ***************************
+        child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                GetPhoto(),
+                SquareTextField(
+                    fieldController: usernameController, hintText: 'Username'),
+                SquareTextField(
+                    fieldController: passwordController, hintText: 'Password'),
+                SquareTextField(
+                    fieldController: emailController,
+                    hintText: 'Email Address'),
+                SquareTextField(
+                    fieldController: zipController, hintText: 'Zip Code'),
+                Container(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          /* ***************************
                     Need to add photos, get seller_id and location from current user
 
                     ***************************** */
-                    createUser(
-                      usernameController.text, 
-                      passwordController.text, 
-                      emailController.text,
-                      zipController.text,
-                      context);
+                          createUser(
+                              usernameController.text,
+                              passwordController.text,
+                              emailController.text,
+                              zipController.text,
+                              imagePath,
+                              context);
 
-                    //Reset fields and hide keyboard
-                    _formKey.currentState?.reset();
-                    SystemChannels.textInput.invokeMethod('TextInput.hide');
-                  }
-                },
-                child: const Text('Create Account!'),
-                )
-            )
-          ],
-        )
-      )
-    );
+                          //Reset fields and hide keyboard
+                          _formKey.currentState?.reset();
+                          SystemChannels.textInput
+                              .invokeMethod('TextInput.hide');
+                        }
+                      },
+                      child: const Text('Create Account!'),
+                    ))
+              ],
+            )));
   }
-
 
   Widget GetPhoto() {
     return Padding(
@@ -144,9 +134,7 @@ class _NewAccountFormState extends State<NewAccountForm> {
                       File(imagePath),
                       fit: BoxFit.cover,
                     ),
-                  )
-        )
-    );
+                  )));
   }
 
   _getFromGallery() async {
@@ -156,7 +144,6 @@ class _NewAccountFormState extends State<NewAccountForm> {
       source: ImageSource.gallery,
       maxWidth: 1800,
       maxHeight: 1800,
-
     );
     print('-Path: ${pickedFile?.path}');
     if (pickedFile != null) {
@@ -183,29 +170,40 @@ class _NewAccountFormState extends State<NewAccountForm> {
   }
 }
 
-void createUser(String username, String password, String email, String zip, BuildContext context) async {
-    
-  //NEED TO ADD PHOTOS
+void createUser(String username, String password, String email, String zip,
+    var imagePath, BuildContext context) async {
   var newUser = {
     'username': username,
     'password': password,
     'email': email,
     'zip': zip,
   };
-
-  var response = await http.post(Uri.parse('${hostURL}:${port}/users'),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(newUser)
-  );
-
-  //If success display success message otherwise display error message. 
-  if(response.statusCode == 201){
-    final successBar = SnackBar(content: Text('Your account has been created!'));
+  try {
+    if (imagePath != null) {
+      // Get s3 location for image
+      Map urlInfo = await generateImageURL(XFile(imagePath), "users");
+      // send file to s3 location
+      await uploadFile(urlInfo['uploadUrl'], XFile(imagePath));
+      newUser['photo'] = urlInfo['fileName'];
+    }
+    var response = await http.post(Uri.parse('${hostURL}:${port}/users'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(newUser));
+    //If success display success message otherwise display error message.
+    if (response.statusCode == 201) {
+      final successBar =
+          SnackBar(content: Text('Your account has been created!'));
+      ScaffoldMessenger.of(context).showSnackBar(successBar);
+      Navigator.pop(context);
+    } else {
+      final successBar =
+          SnackBar(content: Text('Error creating account. Please try again.'));
+      ScaffoldMessenger.of(context).showSnackBar(successBar);
+    }
+  } catch (e) {
+    print('Error creating user ${username} -- ${e}');
+    final successBar =
+        SnackBar(content: Text('Error creating account.  Please try again.'));
     ScaffoldMessenger.of(context).showSnackBar(successBar);
-    Navigator.pop(context);
   }
-  else {
-    final successBar = SnackBar(content: Text('Error creating account. Please try again.'));
-    ScaffoldMessenger.of(context).showSnackBar(successBar);
-  };
 }

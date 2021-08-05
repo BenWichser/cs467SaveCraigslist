@@ -249,7 +249,7 @@ void postItem(String title, String price, String description, String tags, var i
   try {
     if (imagePath != null) {
       // Get s3 location for image
-      Map urlInfo = await generateImageURL(XFile(imagePath));
+      Map urlInfo = await generateImageURL(XFile(imagePath), "items");
       // Send file to s3 location
       await uploadFile(urlInfo['uploadUrl'], XFile(imagePath));
       // create photos entry
