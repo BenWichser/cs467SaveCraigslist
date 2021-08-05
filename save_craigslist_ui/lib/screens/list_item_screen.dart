@@ -68,6 +68,7 @@ class _ItemFormState extends State<ItemForm> {
     TextEditingController titleController = TextEditingController();
     TextEditingController priceController = TextEditingController();
     TextEditingController descriptionController = TextEditingController();
+    TextEditingController tagsController = TextEditingController();
 
     return SingleChildScrollView(
         child: Form(
@@ -76,23 +77,44 @@ class _ItemFormState extends State<ItemForm> {
               children: [
                 GetPhoto(),
                 SquareTextField(
-                    fieldController: titleController, hintText: 'Title'),
-                PriceField(priceController),
+                  fieldController: titleController, 
+                  hintText: 'Title',
+                  validator: (value) {
+                    if (value == null || value.isEmpty){
+                      return 'Required Field!';
+                    }
+                    if (value.length > 40){
+                      return 'Too many characters';
+                    }
+                  }
+                ),
+                SquareTextField(
+                  fieldController: priceController,
+                  hintText: 'Price',
+                  validator: (value) {
+                    if (value == null || value.isEmpty ) {
+                      return 'Please enter a price.';
+                    }
+                    if (!isValidPrice(value)) {
+                      return 'Please enter a valid price.';
+                    }
+                  }
+                ),
                 SquareTextField(
                     fieldController: descriptionController,
-                    hintText: 'Description'),
+                    hintText: 'Description'
+                ),
+                SquareTextField(
+                  fieldController: tagsController, 
+                  hintText: 'Tags'
+                ),
                 Container(
                     padding: EdgeInsets.symmetric(horizontal: 20),
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
-                          /* ***************************
-                          Need to add photos, get seller_id and location from current user
-
-                          ***************************** */
-
-                          postItem(titleController.text, priceController.text, descriptionController.text, imagePath, widget.updateItems, context);
+                          postItem(titleController.text, priceController.text, descriptionController.text, tagsController.text, imagePath, widget.updateItems, context);
 
                           //Reset fields and hide keyboard
                           _formKey.currentState?.reset();
@@ -105,7 +127,8 @@ class _ItemFormState extends State<ItemForm> {
                         }
                       },
                       child: const Text('Post Item!'),
-                    ))
+                    )
+                ),
               ],
             )
         )
@@ -221,7 +244,7 @@ Widget PriceField(TextEditingController priceController) {
 }
 
 
-void postItem(String title, String price, String description, var imagePath, updateItems, BuildContext context) async {
+void postItem(String title, String price, String description, String tags, var imagePath, updateItems, BuildContext context) async {
   var photoslist = [];
   try {
     if (imagePath != null) {
@@ -242,12 +265,15 @@ void postItem(String title, String price, String description, var imagePath, upd
       'seller_id': currentUser.id,
       'location': currentUser.zip,
       'status': 'For Sale',
-      'photos': photoslist
+      'photos': photoslist,
+      'tags': tags
     };
 
-    var response = await http.post(Uri.parse('${hostURL}:${port}/items'),
+    var response = await http.post(
+        Uri.parse('${hostURL}:${port}/items'),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode(newItem));
+        body: jsonEncode(newItem)
+    );
 
     //If success display success message otherwise display error message.
     if (response.statusCode == 201) {

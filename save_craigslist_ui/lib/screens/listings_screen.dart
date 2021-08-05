@@ -8,8 +8,9 @@ import '../account.dart';
 
 class ListingsScreen extends StatefulWidget {
   final void Function() updateItems;
+  final String searchTerms;
 
-  const ListingsScreen({ Key? key, required this.updateItems }) : super(key: key);
+  const ListingsScreen({ Key? key, required this.updateItems,  required this.searchTerms}) : super(key: key);
 
   @override
   _ListingsScreenState createState() => _ListingsScreenState();
@@ -19,7 +20,6 @@ class ListingsScreen extends StatefulWidget {
 class _ListingsScreenState extends State<ListingsScreen> {
   var searchLocation = currentUser.zip;
   var radius = 5;
-  var searchTerms = '';
   var minPrice = 0.0;
   var maxPrice = double.infinity;
 
@@ -30,6 +30,8 @@ class _ListingsScreenState extends State<ListingsScreen> {
     //We get the list of every item in the database as a future. The futurebuilder checks
     //for data, converts the json to a list of Item objects, creates a list of ItemDisplay widgets
     //and returns the list in a Listview.
+    String searchTerms = widget.searchTerms;
+
     var appBarHeight = AppBar().preferredSize.height * .8;
     var appBarWidth = AppBar().preferredSize.width;
 
@@ -65,8 +67,11 @@ class _ListingsScreenState extends State<ListingsScreen> {
         builder: (context, snapshot) {
           if (snapshot.hasData){
             dynamic jsonList = snapshot.data;
-            debugPrint(jsonList.body, wrapWidth: 1024);
-            List<Item> itemList = convertFromJSONToItemList(jsonDecode(jsonList.body));
+            jsonList = jsonDecode(jsonList.body);
+            debugPrint(jsonEncode(jsonList), wrapWidth: 1024);
+
+            sortItems(sortBy, jsonList);
+            List<Item> itemList = convertFromJSONToItemList(jsonList);
             List<ItemDisplay> itemDisplays = createListOfItemDisplays(itemList, widget.updateItems);
             return ListView(children: itemDisplays);
           }
@@ -208,6 +213,11 @@ class _ListingsScreenState extends State<ListingsScreen> {
           checked: sortBy == 'RELEVANCE',
           value: 'RELEVANCE',
           child: Text('Relevance')
+        ),
+        CheckedPopupMenuItem(
+          checked: sortBy == 'DISTANCE',
+          value: 'DISTANCE',
+          child: Text('Distance')
         )
       ], 
     );
@@ -305,7 +315,21 @@ class _ListingsScreenState extends State<ListingsScreen> {
 
 }
 
-
+void sortItems(sortBy, List<dynamic> JSONItems){
+  if (sortBy == 'DATE'){
+    JSONItems.sort((b, a) => a['date_added'].compareTo(b['date_added']));
+  }
+  else if (sortBy == 'PRICE'){
+    JSONItems.sort((a, b) => a['price'].compareTo(b['price']));
+  }
+  else if (sortBy == 'RELEVANCE'){
+    JSONItems.sort((a, b) => a['num_matching_tags'].compareTo(b['num_matching_tags']));
+  }
+  else if (sortBy == 'DISTANCE'){
+    JSONItems.sort((a, b) => a['distance'].compareTo(b['distance']));
+  }
+  
+}
 
 List<Item> convertFromJSONToItemList(List<dynamic> JSONItems){
   List<Item> items = [];
@@ -321,6 +345,7 @@ List<Item> convertFromJSONToItemList(List<dynamic> JSONItems){
       seller_id: item['seller_id'],
       price: item['price'].toDouble(),
       location: item['location'],
+      date_added: DateTime.fromMillisecondsSinceEpoch(int.parse(item['date_added'])),
       photos: item['photos']
       );
 
@@ -334,6 +359,7 @@ List<Item> convertFromJSONToItemList(List<dynamic> JSONItems){
       seller_id: item['seller_id'],
       price: item['price'].toDouble(),
       location: item['location'],
+      date_added: DateTime.fromMillisecondsSinceEpoch(int.parse(item['date_added'])),
       );
 
       items.add(newItem);
