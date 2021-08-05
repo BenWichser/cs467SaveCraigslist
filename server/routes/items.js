@@ -39,8 +39,6 @@ router.post(
 
 router.get("/", async (req, res) => {
   try {
-    // log incoming search
-    console.log(JSON.stringify(req.query));
     // save any search terms to user's record
     db.saveUserSearchTerms(req.query);
     // get search results

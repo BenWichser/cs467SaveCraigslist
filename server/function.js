@@ -271,7 +271,6 @@ async function saveUserSearchTerms(body) {
         searchHistory.shift();
       searchHistory.push({'S': searchTag});
     }
-    console.log(`User ${body.user_id}'s new search history: ${searchHistory}`);
    } catch (err) {
     console.log(`ERROR saveUserSearchTerms -- Error getting search history for user ${body.user_id}: ${err}`);
   }
@@ -549,7 +548,6 @@ async function getItemSuggestions(body) {
       returnItems = returnItems.concat(newItems['Items']);
     }
   }
-console.log(`Suggested Items: \n ${returnItems}`)
 return returnItems;
 }  
     
