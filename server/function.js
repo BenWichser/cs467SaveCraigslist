@@ -393,7 +393,10 @@ async function itemSearchAddTags(params, body, needSuggestions = false){
       console.log(getTagsParams);
       var suggestedTags = await ddbClient.send(new QueryCommand(getTagsParams));
       console.log(suggestedTags);
-      suggestedTags = suggestedTags.Items[0].recent_searches.L;
+      suggestedTags = 'recent_searches' in suggestedTags.Items[0] && 
+          'L' in suggestedTags.Items[0].recent_searches ?
+        suggestedTags.Items[0].recent_searches.L :
+        [];
       console.log(suggestedTags);
       // turn return into list of just strings
       suggestedTags.forEach( (item, index) => {
@@ -634,6 +637,7 @@ function itemPostTagEnhancer(body) {
   *   Null.  Alters `body['tags']`.
   */
  // make new array based on any tags already there
+ console.log(body);
   let improvedTags = body.hasOwnProperty('tags') ? body['tags'] : [];
   // remove punctuation from both title and tags, in that order -- 
   // Not entirely sure ALL punctuation removal is best
