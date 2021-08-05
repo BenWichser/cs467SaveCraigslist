@@ -15,7 +15,7 @@ router.post(
     body("email").exists().isEmail(),
     body("username").exists(),
     body("password").exists(),
-    body("zip").exists()
+    body("zip").exists(),
   ],
   customValidation.validate,
   async (req, res) => {
@@ -24,7 +24,7 @@ router.post(
       email: { S: req.body.email },
       id: { S: req.body.username },
       password: { S: password },
-      zip: { S: req.body.zip}
+      zip: { S: req.body.zip },
     });
     res.status(201).send();
   }
@@ -41,18 +41,24 @@ router.get("/:user_id", async (req, res) => {
   }
 });
 
-router.put(
-  "/:user_id",
-  [
-    body("email").exists().isEmail(),
-    body("username").exists(),
-    body("password").exists(),
-  ],
-  customValidation.validate,
-  (req, res) => {
-    res.status(200).send();
+router.patch("/:user_id", (req, res) => {
+  let current = db.getItem("users", req.params.user_id);
+
+  current = aws.DynamoDB.Converter.unmarshall(current.Item);
+
+  if (_.isUndefined(current)) {
+    return res.status(404).json({ error: "No user with this user_id" });
   }
-);
+
+  current.email = _.isUndefined(req.body.email)
+    ? current.email
+    : req.body.email;
+  current.zip = _.isUndefined(req.body.zip) ? current.zip : req.body.zip;
+
+  db.updateItem("users", current);
+
+  res.status(200).json(current);
+});
 
 router.delete("/:user_id", customValidation.isLoggedIn, (req, res) => {
   db.deleteItem("users", req.params.user_id);
