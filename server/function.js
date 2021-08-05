@@ -250,7 +250,6 @@ async function saveUserSearchTerms(body) {
   var fakePost = {'title': body.tags};
   itemPostTagEnhancer(fakePost);
   var tagList = fakePost.tags;
-  console.log(tagList);
   const saveTagLimit = 200;  // number of recent search tags saved
   // get list of recent searches.  Assumes unique hit with user_id
   try {
@@ -272,9 +271,9 @@ async function saveUserSearchTerms(body) {
         searchHistory.shift();
       searchHistory.push({'S': searchTag});
     }
-    console.log(searchHistory);
+    console.log(`User ${body.user_id}'s new search history: ${searchHistory}`);
    } catch (err) {
-    console.log(`ERRR saveUserSearchTerms -- Error getting search history for user ${body.user_id}: ${err}`);
+    console.log(`ERROR saveUserSearchTerms -- Error getting search history for user ${body.user_id}: ${err}`);
   }
  // send search history back to AWS for user
   try {
@@ -288,7 +287,7 @@ async function saveUserSearchTerms(body) {
     }
     await ddbClient.send(new UpdateItemCommand(newSearchHistoryParams));
   } catch(err) {
-    console.log(`Error saveUserSearchTerms -- Error saving search history for user ${body.user_id}: ${err}`);
+    console.log(`ERROR saveUserSearchTerms -- Error saving search history for user ${body.user_id}: ${err}`);
   }
 }
 
@@ -389,15 +388,11 @@ async function itemSearchAddTags(params, body, needSuggestions = false){
         ExpressionAttributeValues: {':id': {'S': currentUser}},
         ProjectionExpression: "recent_searches"
       };
-      console.log(body);
-      console.log(getTagsParams);
       var suggestedTags = await ddbClient.send(new QueryCommand(getTagsParams));
-      console.log(suggestedTags);
       suggestedTags = 'recent_searches' in suggestedTags.Items[0] && 
           'L' in suggestedTags.Items[0].recent_searches ?
         suggestedTags.Items[0].recent_searches.L :
         [];
-      console.log(suggestedTags);
       // turn return into list of just strings
       suggestedTags.forEach( (item, index) => {
         suggestedTags[index] = item.S;
@@ -465,7 +460,6 @@ function addRelevanceToSearch(body, returnItems) {
     itemTagCount = 0;
     for (tag of item.tags.L)
     {
-      console.log(searchTags);
       if (tag.S in searchtagMap)
       {
         itemTagCount += searchtagMap[tag.S];
@@ -555,6 +549,7 @@ async function getItemSuggestions(body) {
       returnItems = returnItems.concat(newItems['Items']);
     }
   }
+console.log(`Suggested Items: \n ${returnItems}`)
 return returnItems;
 }  
     
@@ -636,8 +631,7 @@ function itemPostTagEnhancer(body) {
   * Returns:
   *   Null.  Alters `body['tags']`.
   */
- // make new array based on any tags already there
- console.log(body);
+  // make new array based on any tags already there
   let improvedTags = body.hasOwnProperty('tags') ? body['tags'] : [];
   // remove punctuation from both title and tags, in that order -- 
   // Not entirely sure ALL punctuation removal is best
