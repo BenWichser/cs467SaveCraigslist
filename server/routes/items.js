@@ -44,7 +44,9 @@ router.post(
 
 router.get("/", async (req, res) => {
   try {
-    console.log(JSON.stringify(req.query));
+    // save any search terms to user's record
+    db.saveUserSearchTerms(req.query);
+    // get search results
     let listings = await db.getItemList(req.query);
     res.status(201).json(db.makeListingsOutput(listings));
   } catch (err) {
