@@ -25,6 +25,7 @@ router.post(
         id: { S: req.body.username },
         password: { S: password },
         zip: { S: req.body.zip },
+        recents: { L: [] }
     };
     if ('photo' in req.body)
     {
