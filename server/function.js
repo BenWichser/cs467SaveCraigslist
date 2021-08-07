@@ -8,7 +8,7 @@ var {
   QueryCommand,
   UpdateItemCommand,
 } = require("@aws-sdk/client-dynamodb");
-var aws = require('aws-sdk');
+var aws = require("aws-sdk");
 // ddbClient construction -- created from AWS documentation but not provided in
 //  AWS package
 var { ddbClient } = require("./libs/ddbClient.js");
@@ -46,15 +46,36 @@ async function updateItem(datatype, data) {
   // sends a putItemCommand with the data
   // datatype: String (One of: "users", "messages", "items")
   // data: Object
-  const params = {
-    TableName: datatype,
-    Key: {id: {S: data.id}},
-    UpdateExpression: "SET email = :email, zip = :zip",
-    ExpressionAttributeValues: {
-      ":email" : {S: data.email},
-      ":zip" : {S: data.zip}
-    }
-  };
+  let params;
+  if (datatype === "users") {
+    params = {
+      TableName: datatype,
+      Key: { id: { S: data.id } },
+      UpdateExpression: "SET email = :email, zip = :zip",
+      ExpressionAttributeValues: {
+        ":email": { S: data.email },
+        ":zip": { S: data.zip },
+      },
+    };
+  } else {
+    params = {
+      TableName: datatype,
+      Key: { id: { S: data.id } },
+      UpdateExpression:
+        "SET title = :title, price = :price, #loc = :location, #stat = :status, description = :description",
+      ExpressionAttributeNames: {
+        "#loc" : "location",
+        "#stat": "status"
+      },
+      ExpressionAttributeValues: {
+        ":title": { S: data.title },
+        ":price": { N: data.price },
+        ":location": { S: data.location },
+        ":status": { S: data.status },
+        ":description": { S: data.description },
+      },
+    };
+  }
   try {
     const action = await ddbClient.send(new UpdateItemCommand(params));
     return action;
@@ -68,9 +89,9 @@ async function getItem(datatype, id) {
   // datatype: String (One of: "users", "messages", "items")
   // id: String
   const params = {
-    "TableName": datatype,
-    "Key": {
-      id: {S: id},
+    TableName: datatype,
+    Key: {
+      id: { S: id },
     },
   };
   try {
@@ -88,26 +109,25 @@ async function getNumItems(num, lastEval, forSale = true) {
   // lastEval: Object (KEY, Returned from prior Scan, Can be Null)
   // forSale: bool - Must items be for sale
   // NOTE: Scan is very inefficient and costly - we should work to minimize
-    const params = {
-        TableName: 'items',
-        IndexName: 'status-location-index',
-        Limit: num,
-        ExclusiveStartKey: lastEval,
-          };
-    if (forSale) 
-    {
-            params["KeyConditionExpression"] = "#s = :s";
-            params["ExpressionAttributeNames"] = {"#s": "status"};
-            params["ExpressionAttributeValues"] = {
-                ":s": {S: "For Sale"}
-            };
-    }
-      try {
-            const action = await ddbClient.send(new QueryCommand(params));
-            return action;
-      } catch (err) {
-        console.log(err);
-      }
+  const params = {
+    TableName: "items",
+    IndexName: "status-location-index",
+    Limit: num,
+    ExclusiveStartKey: lastEval,
+  };
+  if (forSale) {
+    params["KeyConditionExpression"] = "#s = :s";
+    params["ExpressionAttributeNames"] = { "#s": "status" };
+    params["ExpressionAttributeValues"] = {
+      ":s": { S: "For Sale" },
+    };
+  }
+  try {
+    const action = await ddbClient.send(new QueryCommand(params));
+    return action;
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 function makeListingsOutput(arr) {
@@ -120,9 +140,9 @@ function makeListingsOutput(arr) {
    *  List of items converted via marshall
    */
   let output = [];
-  arr.forEach( function (item) {
-    output.push(aws.DynamoDB.Converter.unmarshall(item)
-  )});
+  arr.forEach(function (item) {
+    output.push(aws.DynamoDB.Converter.unmarshall(item));
+  });
   return output;
 }
 
@@ -136,14 +156,16 @@ function addDistanceToUser(location, data) {
    * Returns:
    *  None. Alters `data` to include `distance`: key value in each member
    */
-  data['Items'].forEach( function(item) {
-    item['distance'] = {'N': zipcodes.distance(location, item['location']['S'])};
+  data["Items"].forEach(function (item) {
+    item["distance"] = {
+      N: zipcodes.distance(location, item["location"]["S"]),
+    };
   });
   return data;
 }
 
 async function getOpeningItemList(location, num) {
-  /* openingItemList 
+  /* openingItemList
    * Uses getNumItems to get the opening screen list of items, including distance to user
    * Currently:
    *  10 ITEMS WITH NO TAG RELEVANCE SEARCH
@@ -162,33 +184,34 @@ async function getOpeningItemList(location, num) {
   }
 }
 
-
 async function getAllUserItems(userId, lastEval = null) {
   console.log(`getAllUserItems: getting items for user ${userId}`);
   var params = {
     TableName: "items",
     IndexName: "seller_id-date_added-index",
-    KeyConditionExpression: 'seller_id = :sid',
+    KeyConditionExpression: "seller_id = :sid",
     ExpressionAttributeValues: {
-      ':sid': {'S': userId} 
-    }
-  }
+      ":sid": { S: userId },
+    },
+  };
   var moreRecordsToSearch = true;
   var returnItems = [];
-  while (moreRecordsToSearch)
-  {
+  while (moreRecordsToSearch) {
     try {
       var newItems = await ddbClient.send(new QueryCommand(params));
-      if ('LastEvaluatedKey' in newItems && newItems.LastEvaluatedKey != null) {
+      if ("LastEvaluatedKey" in newItems && newItems.LastEvaluatedKey != null) {
         params.ExclusiveStartKey = newItems.LastEvaluatedKey;
       } else {
         moreRecordsToSearch = false;
       }
     } catch (err) {
       console.log(
-        `ERROR getAllUserItems -- Error getting items for user ${userId} with parameters ${JSON.stringify(params)}: ${err}`);
+        `ERROR getAllUserItems -- Error getting items for user ${userId} with parameters ${JSON.stringify(
+          params
+        )}: ${err}`
+      );
     }
-    returnItems = returnItems.concat(newItems['Items']);
+    returnItems = returnItems.concat(newItems["Items"]);
   }
   return returnItems;
 }
@@ -246,54 +269,58 @@ async function saveUserSearchTerms(body) {
        Null.  Altered userId's entry in Dynamo.
   */
   // Return if empty list.  This shouldn't ever be triggered.
-  if ( !('tags' in body) || body.tags.length === 0)
-  {
+  if (!("tags" in body) || body.tags.length === 0) {
     return;
   }
   // turn search terms into tags to save
-  var fakePost = {'title': body.tags};
+  var fakePost = { title: body.tags };
   itemPostTagEnhancer(fakePost);
   var tagList = fakePost.tags;
-  const saveTagLimit = 200;  // number of recent search tags saved
+  const saveTagLimit = 200; // number of recent search tags saved
   // get list of recent searches.  Assumes unique hit with user_id
   try {
     const searchHistoryParams = {
       TableName: "users",
-      KeyConditionExpression: 'id = :uid',
+      KeyConditionExpression: "id = :uid",
       ExpressionAttributeValues: {
-      ':uid': {'S': body.user_id} 
+        ":uid": { S: body.user_id },
       },
-      ProjectionExpression : 'recent_searches',
-    }
-    var searchHistory = await ddbClient.send(new QueryCommand(searchHistoryParams));
-    searchHistory = 'recent_searches' in searchHistory.Items[0] ? 
-        searchHistory.Items[0].recent_searches.L : 
-        [];
+      ProjectionExpression: "recent_searches",
+    };
+    var searchHistory = await ddbClient.send(
+      new QueryCommand(searchHistoryParams)
+    );
+    searchHistory =
+      "recent_searches" in searchHistory.Items[0]
+        ? searchHistory.Items[0].recent_searches.L
+        : [];
     // add each tag to the recent_searches list, removing any tags needed to limit list to size saveTagLimit
     for (searchTag of tagList) {
-      while (searchHistory.length >= saveTagLimit)
-        searchHistory.shift();
-      searchHistory.push({'S': searchTag});
+      while (searchHistory.length >= saveTagLimit) searchHistory.shift();
+      searchHistory.push({ S: searchTag });
     }
-   } catch (err) {
-    console.log(`ERROR saveUserSearchTerms -- Error getting search history for user ${body.user_id}: ${err}`);
+  } catch (err) {
+    console.log(
+      `ERROR saveUserSearchTerms -- Error getting search history for user ${body.user_id}: ${err}`
+    );
   }
- // send search history back to AWS for user
+  // send search history back to AWS for user
   try {
     const newSearchHistoryParams = {
       TableName: "users",
-      Key: { "id": {'S' : body.user_id}},
+      Key: { id: { S: body.user_id } },
       UpdateExpression: "SET recent_searches = :rs",
       ExpressionAttributeValues: {
-        ":rs": {'L': searchHistory}
+        ":rs": { L: searchHistory },
       },
-    }
+    };
     await ddbClient.send(new UpdateItemCommand(newSearchHistoryParams));
-  } catch(err) {
-    console.log(`ERROR saveUserSearchTerms -- Error saving search history for user ${body.user_id}: ${err}`);
+  } catch (err) {
+    console.log(
+      `ERROR saveUserSearchTerms -- Error saving search history for user ${body.user_id}: ${err}`
+    );
   }
 }
-
 
 function itemSearchAddLocation(params, body, zipController) {
   /* itemSearchAddLocation
@@ -305,36 +332,36 @@ function itemSearchAddLocation(params, body, zipController) {
    *    search should continue
    * Returns:
    *  Boolean on if more zip codes must be considered.  Also slters `params`
-   */ 
+   */
   // set default location to home of PBS's "Zoom" if there is none already given
-  var zip = 'location' in body ? String(body.location) : '70116';
+  var zip = "location" in body ? String(body.location) : "70116";
   // set default distance to 5 miles
-  var radius = 'radius' in body ? Number(body.radius) : 5;
+  var radius = "radius" in body ? Number(body.radius) : 5;
   const goodZips = zipcodes.radius(zip, radius);
   // if, for some crazy reason, we have no zip codes...bail
-  if (goodZips.length == 0)
-  {
+  if (goodZips.length == 0) {
     return;
   }
   // until we are out of zip codes to look through, or we use 100 zips.
   var listZips = 0;
   zipNum = zipController.next_start;
-  while (zipNum < goodZips.length && listZips < 100)
-  {
+  while (zipNum < goodZips.length && listZips < 100) {
     if (zipNum % 100 == 0) {
-      params.ExpressionAttributeNames['#l'] = 'location';
-      params.FilterExpression += " AND #l in ("
-    } else
-    {
-      params.FilterExpression += ", "
+      params.ExpressionAttributeNames["#l"] = "location";
+      params.FilterExpression += " AND #l in (";
+    } else {
+      params.FilterExpression += ", ";
     }
     params.FilterExpression += `:zip${zipNum}`;
-    params.ExpressionAttributeValues[`:zip${zipNum}`] = {'S': goodZips[zipNum]};
+    params.ExpressionAttributeValues[`:zip${zipNum}`] = { S: goodZips[zipNum] };
     zipNum += 1;
-    listZips +=1;
+    listZips += 1;
   }
   params.FilterExpression += ")";
-  return {'next_start': zipNum, 'search_zips_again': !(zipNum == goodZips.length)};
+  return {
+    next_start: zipNum,
+    search_zips_again: !(zipNum == goodZips.length),
+  };
 }
 
 function itemSearchAddPrice(params, body) {
@@ -346,22 +373,28 @@ function itemSearchAddPrice(params, body) {
    * Returns:
    *  Nothing.  Alters `params`
    */
-  if ('minPrice' in body && 'maxPrice' in body) {
-    params.FilterExpression += "AND price between :minPrice and :maxPrice"; 
-    params.ExpressionAttributeValues[':minPrice'] = {'N': String(body.minPrice)};
-    params.ExpressionAttributeValues[':maxPrice'] = {'N': String(body.maxPrice)};
-  } else if ('minPrice' in body)
-  {
+  if ("minPrice" in body && "maxPrice" in body) {
+    params.FilterExpression += "AND price between :minPrice and :maxPrice";
+    params.ExpressionAttributeValues[":minPrice"] = {
+      N: String(body.minPrice),
+    };
+    params.ExpressionAttributeValues[":maxPrice"] = {
+      N: String(body.maxPrice),
+    };
+  } else if ("minPrice" in body) {
     params.FilterExpression += "AND price >= :minPrice";
-    params.ExpressionAttributeValues[':minPrice'] = {'N': String(body.minPrice)};
-  } else if ('maxPrice' in body)
-  {
+    params.ExpressionAttributeValues[":minPrice"] = {
+      N: String(body.minPrice),
+    };
+  } else if ("maxPrice" in body) {
     params.FilterExpression += "AND price <= :maxPrice";
-    params.ExpressionAttributeValues[':maxPrice'] = {'N': String(body.maxPrice)};
+    params.ExpressionAttributeValues[":maxPrice"] = {
+      N: String(body.maxPrice),
+    };
   }
- }
+}
 
-async function itemSearchAddTags(params, body){
+async function itemSearchAddTags(params, body) {
   /* itemSearchAddTags
    * Adds price requirements to item search parameters.
    * Accepts:
@@ -369,36 +402,32 @@ async function itemSearchAddTags(params, body){
    *  body (object): Body of search request
    * Returns:
    *  Nothing.  Alters `params`
-   */ 
+   */
   // version 0: the user entered no search term and we don't need suggestions
-  if ( !('tags' in body)) {
+  if (!("tags" in body)) {
     return;
   }
   // turn 'tags' from server into a list in format as stored on database
-  var fakePost = {'title': body['tags']};
+  var fakePost = { title: body["tags"] };
   itemPostTagEnhancer(fakePost);
-  const tags = fakePost['tags'];
- // make sure cleaning didnt remove all tags
-  if (tags.length == 0)
-  {
+  const tags = fakePost["tags"];
+  // make sure cleaning didnt remove all tags
+  if (tags.length == 0) {
     return;
   }
-  params.ExpressionAttributeNames['#t'] =  'tags';
+  params.ExpressionAttributeNames["#t"] = "tags";
   var tagNum = 0;
-  while (tags.length > 0)
-  {
+  while (tags.length > 0) {
     //introduce tag logic clause in filter expression, or the logic connector "or"
-    if (tagNum == 0)
-    {
+    if (tagNum == 0) {
       params.FilterExpression += " AND (";
-    } else
-    {
-      params.FilterExpression += " OR "
+    } else {
+      params.FilterExpression += " OR ";
     }
     // add tag information to filter expression and the object of variables
     tagNum += 1;
     params.FilterExpression += `contains(#t, :tag${tagNum})`;
-    params.ExpressionAttributeValues[`:tag${tagNum}`] = {'S': tags.pop()};
+    params.ExpressionAttributeValues[`:tag${tagNum}`] = { S: tags.pop() };
   }
   params.FilterExpression += ")";
 }
@@ -412,49 +441,50 @@ async function addRelevanceToSearch(body, returnItems) {
       Nothing.  Modifies newItems
    */
   // start by trying to use search tags
-  var fakeTitle = "tags" in body? body.tags : '';
-  var fakePost = {'title':  fakeTitle};
+  var fakeTitle = "tags" in body ? body.tags : "";
+  var fakePost = { title: fakeTitle };
   itemPostTagEnhancer(fakePost);
-  var searchTags = fakePost['tags'];
+  var searchTags = fakePost["tags"];
   // if no meaningful tags, we use user's search history instead
-  if (searchTags.length === 0){
-    const currentUser = 'user_id' in body ? body.user_id : 'jbutt'; // default...
+  if (searchTags.length === 0) {
+    const currentUser = "user_id" in body ? body.user_id : "jbutt"; // default...
     try {
       var getTagsParams = {
         TableName: "users",
-        KeyConditionExpression: '#i = :id',
-        ExpressionAttributeNames: { '#i': 'id'},
-        ExpressionAttributeValues: {':id': {'S': currentUser}},
-        ProjectionExpression: "recent_searches"
+        KeyConditionExpression: "#i = :id",
+        ExpressionAttributeNames: { "#i": "id" },
+        ExpressionAttributeValues: { ":id": { S: currentUser } },
+        ProjectionExpression: "recent_searches",
       };
       var searchTags = await ddbClient.send(new QueryCommand(getTagsParams));
-      searchTags = 'recent_searches' in searchTags.Items[0] && 
-          'L' in searchTags.Items[0].recent_searches ?
-        searchTags.Items[0].recent_searches.L :
-        [];
+      searchTags =
+        "recent_searches" in searchTags.Items[0] &&
+        "L" in searchTags.Items[0].recent_searches
+          ? searchTags.Items[0].recent_searches.L
+          : [];
       // turn return into list of just strings
-      searchTags.forEach( (item, index) => {
+      searchTags.forEach((item, index) => {
         searchTags[index] = item.S;
       });
     } catch (err) {
-      console.log(`ERROR itemSearchAddTags -- trying to make tags of suggestions for user ${currentUser}: ${err}`);
+      console.log(
+        `ERROR itemSearchAddTags -- trying to make tags of suggestions for user ${currentUser}: ${err}`
+      );
     }
   }
   // change searchTags to object counting occurrences
   const searchtagMap = searchTags.reduce(function (acc, curr) {
-      return acc[curr] ? ++acc[curr] : acc[curr] = 1, acc
-    }, {});
+    return acc[curr] ? ++acc[curr] : (acc[curr] = 1), acc;
+  }, {});
   var itemTagCount;
   for (item of returnItems) {
     itemTagCount = 0;
-    for (tag of item.tags.L)
-    {
-      if (tag.S in searchtagMap)
-      {
+    for (tag of item.tags.L) {
+      if (tag.S in searchtagMap) {
         itemTagCount += searchtagMap[tag.S];
       }
     }
-    item['num_matching_tags'] = {'N' : itemTagCount};
+    item["num_matching_tags"] = { N: itemTagCount };
   }
 }
 
@@ -468,18 +498,16 @@ async function getUserPhoto(user_id) {
    */
   try {
     const params = {
-      TableName: 'users',
+      TableName: "users",
       KeyConditionExpression: "#i = :i",
-      ExpressionAttributeNames: {'#i': 'id'},
-      ExpressionAttributeValues: {':i': {'S': user_id}},
-      ProjectionExpression: "photo"
-      };
+      ExpressionAttributeNames: { "#i": "id" },
+      ExpressionAttributeValues: { ":i": { S: user_id } },
+      ProjectionExpression: "photo",
+    };
     const result = await ddbClient.send(new QueryCommand(params));
-    if (result.Items.length == 1)
-      return result.Items[0].photo;
-    else
-      return null;
-  } catch(err) {
+    if (result.Items.length == 1) return result.Items[0].photo;
+    else return null;
+  } catch (err) {
     console.log(`Error getting User Photo for user ${user_id}: ${err}`);
   }
 }
@@ -494,29 +522,28 @@ async function getItemList(body) {
    */
 
   // set default current user to jbutt
-  var currentUser = 'user_id' in body ? String(body.user_id) : 'jbutt';
+  var currentUser = "user_id" in body ? String(body.user_id) : "jbutt";
   var returnItems = [];
   // create loop for multiple zip code lists
   var zipController = {
-    'next_start': 0,
-    'search_zips_again': true
+    next_start: 0,
+    search_zips_again: true,
   };
-  while (zipController.search_zips_again)
-  {
+  while (zipController.search_zips_again) {
     // set up parameters including need for active "For Sale" listing from another seller
     var params = {
       TableName: "items",
       IndexName: "status-index",
-      KeyConditionExpression: '#s = :s',
+      KeyConditionExpression: "#s = :s",
       FilterExpression: "seller_id <> :sid",
       ExpressionAttributeNames: {
-        '#s': 'status'
+        "#s": "status",
       },
       ExpressionAttributeValues: {
-        ':s': {'S': 'For Sale'},
-        ':sid': {'S': currentUser} 
-      }
-    }
+        ":s": { S: "For Sale" },
+        ":sid": { S: currentUser },
+      },
+    };
     // Add location requirements, and get feedback on if we must check more zips
     zipController = itemSearchAddLocation(params, body, zipController);
     // Add price requirements
@@ -529,66 +556,78 @@ async function getItemList(body) {
       try {
         var newItems = await ddbClient.send(new QueryCommand(params));
         // check to see if we must search again, and adjust parameters
-        if ('LastEvaluatedKey' in newItems && newItems.LastEvaluatedKey != null) {
+        if (
+          "LastEvaluatedKey" in newItems &&
+          newItems.LastEvaluatedKey != null
+        ) {
           params.ExclusiveStartKey = newItems.LastEvaluatedKey;
         } else {
           moreRecordsToSearch = false;
         }
       } catch (err) {
-        console.log(`ERROR getItemList with parameters ${JSON.stringify(params)} -- ${err}`);
+        console.log(
+          `ERROR getItemList with parameters ${JSON.stringify(
+            params
+          )} -- ${err}`
+        );
       }
-     // add new items to return list
-     returnItems = returnItems.concat(newItems["Items"]);
+      // add new items to return list
+      returnItems = returnItems.concat(newItems["Items"]);
     }
   }
-  const currentZip = 'location' in body ? body.location : '70116';
-  addDistanceToUser(currentZip, {"Items": returnItems} );
+  const currentZip = "location" in body ? body.location : "70116";
+  addDistanceToUser(currentZip, { Items: returnItems });
   await addRelevanceToSearch(body, returnItems);
-return returnItems;
+  return returnItems;
 }
 
 function itemPostTagEnhancer(body) {
   /* itemPostTagEnhancer
-  * Scans title for useable tags, and adds them to body's tag array
-  * Accepts:
-  *   body (Object):  Object from item post
-  * Returns:
-  *   Null.  Alters `body['tags']`.
-  */
+   * Scans title for useable tags, and adds them to body's tag array
+   * Accepts:
+   *   body (Object):  Object from item post
+   * Returns:
+   *   Null.  Alters `body['tags']`.
+   */
   // make new array based on any tags already there
-  let improvedTags = body.hasOwnProperty('tags') ? body['tags'] : [];
-  // remove punctuation from both title and tags, in that order -- 
+  let improvedTags = body.hasOwnProperty("tags") ? body["tags"] : [];
+  // remove punctuation from both title and tags, in that order --
   // Not entirely sure ALL punctuation removal is best
   // var punctuation = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~';
-  var regex = new RegExp(/[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,\-.\/:;<=>?@\[\]^_`{|}~]/, 'g');
-  const noPunctuationTitle = body['title'].replace(regex, ' ');
+  var regex = new RegExp(
+    /[\u2000-\u206F\u2E00-\u2E7F\\'!"#$%&()*+,\-.\/:;<=>?@\[\]^_`{|}~]/,
+    "g"
+  );
+  const noPunctuationTitle = body["title"].replace(regex, " ");
   // any entered tags are made to be a string and then reformed into list
   //  after punctuation is removed.  This is to make sure the list is only
   //  of single words
-  improvedTags = improvedTags.join(' ').replace(regex, ' ').split(' ');
+  improvedTags = improvedTags.join(" ").replace(regex, " ").split(" ");
   // change all current tag words to lower case
   if (improvedTags.length > 0)
-    improvedTags.forEach( (name, index) => improvedTags[index] = name.toLowerCase());
+    improvedTags.forEach(
+      (name, index) => (improvedTags[index] = name.toLowerCase())
+    );
   // add every title word that isn't alreadya tag into tag array
-  const titleArray = noPunctuationTitle.split(' ');
-  for (let word of titleArray)
-  {
-    if (!improvedTags.includes(word.toLowerCase()))
-    {
+  const titleArray = noPunctuationTitle.split(" ");
+  for (let word of titleArray) {
+    if (!improvedTags.includes(word.toLowerCase())) {
       improvedTags.push(word.toLowerCase());
     }
   }
   // remove common words, as well as trailing 's' and 't' from contractions/possessive
-  improvedTags = stopwords.removeStopwords(improvedTags, [...stopwords.en, ...['s', 't']]);
+  improvedTags = stopwords.removeStopwords(improvedTags, [
+    ...stopwords.en,
+    ...["s", "t"],
+  ]);
   // quick convert to set and back to remove duplicates
-  improvedTags = [ ...new Set(improvedTags)];
+  improvedTags = [...new Set(improvedTags)];
   // remove empty strings
-  improvedTags = improvedTags.filter( function(ele) {
-    return  ele != '';
-  }
-  );
+  improvedTags = improvedTags.filter(function (ele) {
+    return ele != "";
+  });
   // fix the body (ody ody ody) 'tags' value
-  body['tags'] = improvedTags;
+  body["tags"] = improvedTags;
 }
 
 module.exports = {
@@ -606,5 +645,5 @@ module.exports = {
   getAllUserItems,
   itemPostTagEnhancer,
   makeListingsOutput,
-  getItemList
+  getItemList,
 };

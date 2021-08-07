@@ -92,9 +92,10 @@ router.put(
         .json({ Error: "No item with that item_id exists" });
     }
     let update = _.extend(req.body, { id: req.params.item_id });
+    update.price = String(update.price);
     item = await db.updateItem(
       "items",
-      aws.DynamoDB.Converter.marshall(_.extend(req.body, update))
+      _.extend(req.body, update)
     );
     res.status(200).json(update);
   }
