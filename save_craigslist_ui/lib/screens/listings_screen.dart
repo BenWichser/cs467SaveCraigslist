@@ -23,7 +23,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
   var minPrice = 0.0;
   var maxPrice = double.infinity;
 
-  var sortBy = 'DATE';
+  var sortBy = 'RELEVANCE';
   
   @override
   Widget build(BuildContext context) {

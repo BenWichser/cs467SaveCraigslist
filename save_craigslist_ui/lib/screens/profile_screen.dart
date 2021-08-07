@@ -19,8 +19,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  TextEditingController usernameController =
-      TextEditingController(text: currentUser.id);
   TextEditingController emailController =
       TextEditingController(text: currentUser.email);
   TextEditingController zipController =
@@ -110,10 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Border(bottom: BorderSide(width: 1.0, color: Colors.black))),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Username:'),
-          !editMode
-              ? Text(currentUser.id)
-              : SquareTextField(
-                  fieldController: usernameController, hintText: 'username')
+          Text(currentUser.id)
         ])
     );
   }
@@ -159,8 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: editMode
             ? ElevatedButton(
                 onPressed: () {
-                  updateUserInfo(usernameController.text, emailController.text,
-                      zipController.text);
+                  updateUserInfo(emailController.text, zipController.text);
                   setState(() {
                     // editMode = !editMode;
                   });
@@ -178,10 +172,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void updateUserInfo(username, email, zip) async {
+  void updateUserInfo(email, zip) async {
     editMode = !editMode;
     var userInfo = {
-      'username': username,
       'email': email,
       'zip': zip,
     };
@@ -203,7 +196,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     var response = await http.patch(
         Uri.parse('${hostURL}:${port}/users/${currentUser.id}'),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode(userInfo));
+        body: jsonEncode(userInfo)
+    );
     print(response.statusCode);
     //If success display success message otherwise display error message.
     if (response.statusCode == 200) {
