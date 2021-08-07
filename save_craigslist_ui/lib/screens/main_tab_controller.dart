@@ -140,7 +140,7 @@ Widget profilePicture(User currentUser) {
     child: UserAccountsDrawerHeader(
       currentAccountPicture: CircleAvatar(
           backgroundColor: Colors.black,
-          foregroundImage: NetworkImage(currentUser.photo),
+          foregroundImage: NetworkImage('${currentUser.photo}'),
 
       ),
       accountName: Text(currentUser.id),

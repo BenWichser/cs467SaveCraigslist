@@ -42,19 +42,24 @@ async function createItem(datatype, data) {
 }
 
 async function updateItem(datatype, data) {
-  // createItem takes the table name and object to be posted and
-  // sends a putItemCommand with that data
+  // updateItem takes the table name and object to be posted and
+  // sends a putItemCommand with the data
   // datatype: String (One of: "users", "messages", "items")
   // data: Object
   const params = {
     TableName: datatype,
-    Item: data,
+    Key: {id: {S: data.id}},
+    UpdateExpression: "SET email = :email, zip = :zip",
+    ExpressionAttributeValues: {
+      ":email" : {S: data.email},
+      ":zip" : {S: data.zip}
+    }
   };
   try {
-    const action = await ddbClient.send(new PutItemCommand(params));
+    const action = await ddbClient.send(new UpdateItemCommand(params));
     return action;
   } catch (err) {
-    console.log(err);
+    console.log(`ERROR updateItem for ${JSON.stringify(data)} -- ${err}`);
   }
 }
 
@@ -63,12 +68,11 @@ async function getItem(datatype, id) {
   // datatype: String (One of: "users", "messages", "items")
   // id: String
   const params = {
-    TableName: datatype,
-    Key: {
-      id: { S: id },
+    "TableName": datatype,
+    "Key": {
+      id: {S: id},
     },
   };
-
   try {
     const action = await ddbClient.send(new GetItemCommand(params));
     return action;
