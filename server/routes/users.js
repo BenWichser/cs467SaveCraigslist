@@ -59,6 +59,14 @@ router.patch("/:user_id", async (req, res) => {
       : req.body.email;
     current.zip = _.isUndefined(req.body.zip) ? current.zip : req.body.zip;
     await db.updateItem("users", current);
+    // only send back necessary information
+    current = {
+      photo: current.photo,
+      zip: current.zip,
+      email: current.email,
+      id: current.id
+    }
+    console.log(current);
     res.status(200).json(current);
   } catch (err) {
     console.log(`ERROR patch /:user_id for ${req.params.user_id} -- error getting current user info: ${err}`);

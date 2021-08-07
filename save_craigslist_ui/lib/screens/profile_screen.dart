@@ -1,3 +1,5 @@
+import 'dart:math';
+import '../models/user.dart';
 import 'package:flutter/material.dart';
 import 'package:save_craigslist_ui/components/square_text_field.dart';
 import 'package:http/http.dart' as http;
@@ -45,15 +47,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget profilePhoto() {
     print(currentUser.photo);
-
-    return Padding(
+    return Container(
         padding: EdgeInsets.all(20),
         child: AspectRatio(
             aspectRatio: 1,
             child: !editMode
                 ?
                 // if not edit mode, we show image
-                Image(image: NetworkImage('${currentUser.photo}'))
+                Image.network('${currentUser.photo}',
+                    key: ValueKey(new Random().nextInt(100)))
                 :
                 // if edit mode, we show image with button above
                 Stack(children: <Widget>[
@@ -61,7 +63,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         padding: EdgeInsets.zero,
                         child: imagePath == null
                             // if image hasn't changed yet, show old photo
-                            ? new Image(
+                            ? Image(
                                 image: NetworkImage('${currentUser.photo}'),
                                 fit: BoxFit.fitWidth)
                             // if image has changed, show new photo
@@ -149,7 +151,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   updateUserInfo(usernameController.text, emailController.text,
                       zipController.text);
                   setState(() {
-                    editMode = !editMode;
+                    // editMode = !editMode;
                   });
                 },
                 child: const Text('Save'),
@@ -192,6 +194,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     print(response.statusCode);
     //If success display success message otherwise display error message.
     if (response.statusCode == 200) {
+      //Update current user
+      var userInfo = jsonDecode(response.body);
+      if (userInfo.containsKey('photo')) {
+        currentUser = User(
+            email: userInfo['email']!,
+            id: userInfo['id']!,
+            zip: userInfo['zip'],
+            photo:
+                'https://savecraigslistusers.s3.us-east-2.amazonaws.com/${userInfo['photo']!}');
+      } else {
+        currentUser = User(
+          email: userInfo['email']!,
+          id: userInfo['id']!,
+          zip: userInfo['zip'],
+        );
+      }
+      setState(() {
+        imageCache?.clear();
+        editMode = !editMode;
+      });
+
       final successBar =
           SnackBar(content: Text('Your account details have been updated!'));
       ScaffoldMessenger.of(context).showSnackBar(successBar);
