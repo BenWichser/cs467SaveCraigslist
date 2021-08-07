@@ -28,6 +28,11 @@ router.post(
   //customValidation.isLoggedIn,
   customValidation.validate,
   (req, res) => {
+    if ('tags' in req.body) 
+    {
+      req.body.tags = req.body.tags.split(' ');
+    }
+
     db.itemPostTagEnhancer(req.body);
     let new_id = uuidv4();
     let postTime = _.now().toString();
@@ -39,7 +44,9 @@ router.post(
 
 router.get("/", async (req, res) => {
   try {
-    console.log(JSON.stringify(req.query));
+    // save any search terms to user's record
+    db.saveUserSearchTerms(req.query);
+    // get search results
     let listings = await db.getItemList(req.query);
     res.status(201).json(db.makeListingsOutput(listings));
   } catch (err) {

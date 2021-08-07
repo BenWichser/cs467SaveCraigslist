@@ -239,6 +239,47 @@ const sampleItemK = {
     ]
 }
 
+const sampleItemL = {
+    // item that is close ot jbutt and has specific tags for testing
+    id: 'sampleItemL',
+    date_added: String( Date.now()),
+    title: 'Sparkly item',
+    description: 'Item meant to hit tags: sparkly, bedazzle, pink, unicorn, item.',
+    seller_id: 'neighborSeller',
+    location: '70146',
+    status: 'For Sale',
+    price: '2.3',
+    photos: [],
+    tags: [
+        {'S': 'sparkly'},
+        {'S': 'bedazzle'},
+        {'S': 'pink'},
+        {'S': 'unicorn'},
+        {'S': 'item'}
+    ]
+}
+
+const sampleItemM = {
+    // item that is close to jbutt and has specific tags for testing
+    id: 'sampleItemM',
+    date_added: String( Date.now()),
+    title: 'Boring item',
+    description: 'Item mean to hit tags: boring, gray, grey, dull, item.',
+    seller_id: 'neighborSeller',
+    location: '70146',
+    status: 'For Sale',
+    price: '1.234',
+    photos: [],
+    tags: [
+        {'S': 'boring'},
+        {'S': 'gray'},
+        {'S': 'grey'},
+        {'S': 'dull'},
+        {'S': 'item'}
+    ]
+}
+
+
 const sampleItems = [
     sampleItemA,
     sampleItemB,
@@ -250,6 +291,8 @@ const sampleItems = [
     sampleItemH,
     sampleItemI,
     sampleItemJ,
-    sampleItemK
+    sampleItemK,
+    sampleItemL,
+    sampleItemM
 ]
 module.exports = {sampleItems};

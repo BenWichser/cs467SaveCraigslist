@@ -8,26 +8,48 @@ import 'conversation_screen.dart';
 import '../models/conversation.dart';
 import '../models/message.dart';
 
-class ItemScreen extends StatelessWidget {
+class ItemScreen extends StatefulWidget {
   final Item item;
   final void Function() updateItems;
 
   ItemScreen({ Key? key, required this.item, required this.updateItems}) : super(key: key);
 
   @override
+  _ItemScreenState createState() => _ItemScreenState();
+}
+
+class _ItemScreenState extends State<ItemScreen> {
+  bool editMode = false;
+
+  TextEditingController titleController = TextEditingController();
+  TextEditingController priceController = TextEditingController();
+  TextEditingController descriptionController = TextEditingController();
+
+  @override
   Widget build(BuildContext context) {
+    titleController.text = widget.item.title;
+    priceController.text = widget.item.price.toString();
+    descriptionController.text = widget.item.description!;
+
     return Scaffold(
-      appBar: AppBar(title: Text(item.title)),
+      appBar: AppBar(title: Text(widget.item.title)),
       body: SingleChildScrollView(
           child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            itemPhotos(item),
-            itemInfo(item),
-            itemDescription(item),
+            itemPhotos(widget.item),
+            itemInfo(widget.item),
+            itemDescription(widget.item),
 
-            //Either the seller info, or a delete button if the current user is the seller
-            item.seller_id != currentUser.id ? sellerSection(item, context) : deleteButton(item.id, context)
+            //Either the seller info, or a edit and delete buttons if the current user is the seller
+            widget.item.seller_id != currentUser.id 
+              ? sellerSection(widget.item, context) 
+              : Column(children: [
+                  editButton(widget.item.id, context), 
+                  deleteButton(widget.item.id, context)
+                ]),
+
+
           ]
         )
       )
@@ -39,10 +61,34 @@ class ItemScreen extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 20),
       width: double.infinity,
       child: ElevatedButton(
+        style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Colors.red)),
         onPressed: () => showDialog(
           context: context,
           builder: (BuildContext context) => confirmDelete(itemId, context)),
         child: Text('Delete Item')
+      )
+    );
+  }
+
+  Widget editButton(itemId, context){
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      width: double.infinity,
+      child: !editMode ? ElevatedButton(
+        onPressed: () {
+          setState((){
+            editMode = !editMode;
+          });
+        },
+        child: Text('Edit Item')
+      )
+      : ElevatedButton(
+        onPressed: () {
+          setState((){
+            editMode = !editMode;
+          });
+        },
+        child: Text('Save')
       )
     );
   }
@@ -73,11 +119,10 @@ class ItemScreen extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(successBar);
     };
     
-    updateItems();
+    widget.updateItems();
     Navigator.pop(context);
     Navigator.pop(context);
   }
-
 }
 
 Widget itemPhotos(Item item){

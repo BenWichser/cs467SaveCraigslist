@@ -15,17 +15,29 @@ router.post(
     body("email").exists().isEmail(),
     body("username").exists(),
     body("password").exists(),
-    body("zip").exists()
+    body("zip").exists(),
   ],
   customValidation.validate,
   async (req, res) => {
     let password = await db.hashPassword(req.body.password);
-    db.createItem("users", {
-      email: { S: req.body.email },
-      id: { S: req.body.username },
-      password: { S: password },
-      zip: { S: req.body.zip}
-    });
+    let exists = await db.getItem("users", req.body.username);
+
+    if (!_.isUndefined(exists.Item)) {
+      return res.status(403).json({ error: "A user with this username already exists" });
+    }
+    
+    let newUserParams = {
+        email: { S: req.body.email },
+        id: { S: req.body.username },
+        password: { S: password },
+        zip: { S: req.body.zip },
+        recents: { L: [] }
+    };
+    if ('photo' in req.body)
+    {
+      newUserParams.photo = { S: req.body.photo};
+    }
+    await db.createItem("users", newUserParams);
     res.status(201).send();
   }
 );
@@ -41,18 +53,34 @@ router.get("/:user_id", async (req, res) => {
   }
 });
 
-router.put(
-  "/:user_id",
-  [
-    body("email").exists().isEmail(),
-    body("username").exists(),
-    body("password").exists(),
-  ],
-  customValidation.validate,
-  (req, res) => {
-    res.status(200).send();
+router.patch("/:user_id", async (req, res) => {
+  console.log(`Patching info for user ${req.params.user_id}`);
+  try {
+    let current = await db.getItem("users", req.params.user_id);
+    current = aws.DynamoDB.Converter.unmarshall(current.Item);
+    if (_.isUndefined(current)) {
+      return res.status(404).json({ error: "No user with this user_id" });
+    }
+    current.email = _.isUndefined(req.body.email)
+      ? current.email
+      : req.body.email;
+    current.zip = _.isUndefined(req.body.zip) ? current.zip : req.body.zip;
+    await db.updateItem("users", current);
+    // only send back necessary information
+    current = {
+      photo: current.photo,
+      zip: current.zip,
+      email: current.email,
+      id: current.id
+    }
+    console.log(current);
+    res.status(200).json(current);
+  } catch (err) {
+    console.log(`ERROR patch /:user_id for ${req.params.user_id} -- error getting current user info: ${err}`);
+    return res.status(500);
   }
-);
+});
+
 
 router.delete("/:user_id", customValidation.isLoggedIn, (req, res) => {
   db.deleteItem("users", req.params.user_id);

@@ -119,17 +119,17 @@ class _ConversationScreenState extends State<ConversationScreen> {
           //covering some of the messages, so the messages are in a sizedbox sized to stay
           //above the keyboard and text field. 
 
-          return SizedBox(
+          return Align(alignment: Alignment.topCenter, child: SizedBox(
               width: MediaQuery.of(context).size.width,
               height: keyboardHeight == 0 
-                ? MediaQuery.of(context).size.height 
-                : (MediaQuery.of(context).size.height - keyboardHeight - 200),
+                ? MediaQuery.of(context).size.height - 160
+                : (MediaQuery.of(context).size.height - keyboardHeight - 160),
               child: ListView(
                 shrinkWrap: true,
                 reverse: true,
                 children: messageDisplays
               )
-          );
+          ));
         }
         else if (snapshot.hasError){
           return Text('Error loading conversation'); 

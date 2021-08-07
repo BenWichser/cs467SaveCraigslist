@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:save_craigslist_ui/server_url.dart';
 import '../models/item.dart';
 import '../screens/item_screen.dart';
+import '../functions/readable_date.dart';
 
 class ItemDisplay extends StatelessWidget {
   final Item item;
@@ -43,6 +44,7 @@ class ItemDisplay extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(item.title),
+                  Text(readableDate(item.date_added)),
                   Text('\$${item.price.toStringAsFixed(2)}')
                 ])
             )

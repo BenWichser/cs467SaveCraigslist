@@ -8,6 +8,7 @@ import '../models/user.dart';
 import '../account.dart';
 import '../server_url.dart';
 import 'package:flutter/services.dart';
+import 'profile_screen.dart';
 
 class MainTabController extends StatefulWidget {
 
@@ -22,6 +23,7 @@ class MainTabController extends StatefulWidget {
 
 class _MainTabControllerState extends State<MainTabController> {
   int _currentIndex = 0;
+  String searchTerms = '';
 
   void updateItems() {
     setState( (){} );
@@ -34,7 +36,7 @@ class _MainTabControllerState extends State<MainTabController> {
   Widget build(BuildContext context) {
     //Widget _header = listingsHeader();
 
-    final screens = [ListingsScreen(updateItems: updateItems), MessagesScreen()];
+    final screens = [ListingsScreen(updateItems: updateItems, searchTerms: searchTerms), MessagesScreen()];
     var appBarHeight = AppBar().preferredSize.height * .8;
 
     return DefaultTabController(
@@ -57,7 +59,8 @@ class _MainTabControllerState extends State<MainTabController> {
         ),
         bottomNavigationBar: TabBar(
           tabs: MainTabController.tabs,
-          onTap: onTabTapped),
+          onTap: onTabTapped
+        ),
         body: TabBarView(
           physics: NeverScrollableScrollPhysics(),
           children: screens),
@@ -92,15 +95,25 @@ class _MainTabControllerState extends State<MainTabController> {
           prefixIcon: Icon(Icons.search),
           suffixIcon: IconButton(
             onPressed: () {
+              FocusScope.of(context).requestFocus(FocusNode());
+              setState( (){
+                searchTerms = '';
+              });
+
               //Clear search field and close keyboard
-              FocusScope.of(context).requestFocus(new FocusNode()); 
-              searchController.clear();
-              
-              
+              searchController.clear(); 
+              SystemChannels.textInput.invokeMethod('TextInput.hide');
             },
             icon: Icon(Icons.clear)),
-          border: OutlineInputBorder())
-    ));
+          border: OutlineInputBorder()
+        ),
+        onFieldSubmitted: (value) {
+          setState( () {
+            searchTerms = value;
+          });
+        }
+      )
+    );
   }
 
 
@@ -114,6 +127,7 @@ Widget userDrawer(BuildContext context, updateItems){
         profilePicture(currentUser),
         listAnItemButton(context, currentUser, updateItems),
         myListingsButton(context),
+        profileButton(context),
         logoutButton(context)
       ]
     )
@@ -126,8 +140,7 @@ Widget profilePicture(User currentUser) {
     child: UserAccountsDrawerHeader(
       currentAccountPicture: CircleAvatar(
           backgroundColor: Colors.black,
-          foregroundImage: NetworkImage(currentUser.photo),
-          //child: const Text('UN')
+          foregroundImage: NetworkImage('${currentUser.photo}'),
 
       ),
       accountName: Text(currentUser.id),
@@ -159,6 +172,20 @@ Widget myListingsButton(BuildContext context) {
         context,
         MaterialPageRoute<void>(
           builder: (BuildContext context) => const MyListingsScreen(),
+        ),
+      );
+    }
+  );
+}
+
+Widget profileButton(BuildContext context){
+  return ListTile(
+    title: Text('View/Edit Profile'),
+    onTap: () {
+      Navigator.push<void>(
+        context,
+        MaterialPageRoute<void>(
+          builder: (BuildContext context) => const ProfileScreen(),
         ),
       );
     }

@@ -6,6 +6,7 @@ var {
   BatchGetItemCommand,
   ScanCommand,
   QueryCommand,
+  UpdateItemCommand,
 } = require("@aws-sdk/client-dynamodb");
 var aws = require('aws-sdk');
 // ddbClient construction -- created from AWS documentation but not provided in
@@ -16,7 +17,6 @@ const _ = require("lodash");
 var zipcodes = require("zipcodes");
 var stopwords = require("stopword");
 const { filter } = require("lodash");
-
 async function hashPassword(password) {
   const salt = await crypt.genSalt(10);
   const hash = await crypt.hash(password, salt);
@@ -42,19 +42,24 @@ async function createItem(datatype, data) {
 }
 
 async function updateItem(datatype, data) {
-  // createItem takes the table name and object to be posted and
-  // sends a putItemCommand with that data
+  // updateItem takes the table name and object to be posted and
+  // sends a putItemCommand with the data
   // datatype: String (One of: "users", "messages", "items")
   // data: Object
   const params = {
     TableName: datatype,
-    Item: data,
+    Key: {id: {S: data.id}},
+    UpdateExpression: "SET email = :email, zip = :zip",
+    ExpressionAttributeValues: {
+      ":email" : {S: data.email},
+      ":zip" : {S: data.zip}
+    }
   };
   try {
-    const action = await ddbClient.send(new PutItemCommand(params));
+    const action = await ddbClient.send(new UpdateItemCommand(params));
     return action;
   } catch (err) {
-    console.log(err);
+    console.log(`ERROR updateItem for ${JSON.stringify(data)} -- ${err}`);
   }
 }
 
@@ -63,12 +68,11 @@ async function getItem(datatype, id) {
   // datatype: String (One of: "users", "messages", "items")
   // id: String
   const params = {
-    TableName: datatype,
-    Key: {
-      id: { S: id },
+    "TableName": datatype,
+    "Key": {
+      id: {S: id},
     },
   };
-
   try {
     const action = await ddbClient.send(new GetItemCommand(params));
     return action;
@@ -234,6 +238,63 @@ function deleteItem(datatype, id) {
   }
 }
 
+async function saveUserSearchTerms(body) {
+  /* Saves user's search terms.  Assumes search terms have already been tag-filtered.
+   * Accepts:
+      body (object): User's search query
+   * Returns:
+       Null.  Altered userId's entry in Dynamo.
+  */
+  // Return if empty list.  This shouldn't ever be triggered.
+  if ( !('tags' in body) || body.tags.length === 0)
+  {
+    return;
+  }
+  // turn search terms into tags to save
+  var fakePost = {'title': body.tags};
+  itemPostTagEnhancer(fakePost);
+  var tagList = fakePost.tags;
+  const saveTagLimit = 200;  // number of recent search tags saved
+  // get list of recent searches.  Assumes unique hit with user_id
+  try {
+    const searchHistoryParams = {
+      TableName: "users",
+      KeyConditionExpression: 'id = :uid',
+      ExpressionAttributeValues: {
+      ':uid': {'S': body.user_id} 
+      },
+      ProjectionExpression : 'recent_searches',
+    }
+    var searchHistory = await ddbClient.send(new QueryCommand(searchHistoryParams));
+    searchHistory = 'recent_searches' in searchHistory.Items[0] ? 
+        searchHistory.Items[0].recent_searches.L : 
+        [];
+    // add each tag to the recent_searches list, removing any tags needed to limit list to size saveTagLimit
+    for (searchTag of tagList) {
+      while (searchHistory.length >= saveTagLimit)
+        searchHistory.shift();
+      searchHistory.push({'S': searchTag});
+    }
+   } catch (err) {
+    console.log(`ERROR saveUserSearchTerms -- Error getting search history for user ${body.user_id}: ${err}`);
+  }
+ // send search history back to AWS for user
+  try {
+    const newSearchHistoryParams = {
+      TableName: "users",
+      Key: { "id": {'S' : body.user_id}},
+      UpdateExpression: "SET recent_searches = :rs",
+      ExpressionAttributeValues: {
+        ":rs": {'L': searchHistory}
+      },
+    }
+    await ddbClient.send(new UpdateItemCommand(newSearchHistoryParams));
+  } catch(err) {
+    console.log(`ERROR saveUserSearchTerms -- Error saving search history for user ${body.user_id}: ${err}`);
+  }
+}
+
+
 function itemSearchAddLocation(params, body, zipController) {
   /* itemSearchAddLocation
    * Adds location specification to item search parameters.
@@ -300,7 +361,7 @@ function itemSearchAddPrice(params, body) {
   }
  }
 
-function itemSearchAddTags(params, body){
+async function itemSearchAddTags(params, body){
   /* itemSearchAddTags
    * Adds price requirements to item search parameters.
    * Accepts:
@@ -309,57 +370,88 @@ function itemSearchAddTags(params, body){
    * Returns:
    *  Nothing.  Alters `params`
    */ 
-  // set default tags ot an empty string
-  if ('tags' in body)
-  {
-    // turn 'tags' from server into a list in format as stored on database
-    var fakePost = {'title': body['tags']};
-    itemPostTagEnhancer(fakePost);
-    const tags = fakePost['tags'];
-    // make sure cleaning didnt remove all tags
-    if (tags.length == 0)
-      return;
-    params.ExpressionAttributeNames['#t'] =  'tags';
-    var tagNum = 0;
-    while (tags.length > 0)
-    {
-      //introduce tag logic clause in filter expression, or the logic connector "or"
-      if (tagNum == 0)
-      {
-        params.FilterExpression += " AND (";
-      } else
-      {
-        params.FilterExpression += " OR "
-      }
-      // add tag information to filter expression and the object of variables
-      tagNum += 1;
-      params.FilterExpression += `contains(#t, :tag${tagNum})`;
-      params.ExpressionAttributeValues[`:tag${tagNum}`] = {'S': tags.pop()};
-    }
-    params.FilterExpression += ")";
+  // version 0: the user entered no search term and we don't need suggestions
+  if ( !('tags' in body)) {
+    return;
   }
+  // turn 'tags' from server into a list in format as stored on database
+  var fakePost = {'title': body['tags']};
+  itemPostTagEnhancer(fakePost);
+  const tags = fakePost['tags'];
+ // make sure cleaning didnt remove all tags
+  if (tags.length == 0)
+  {
+    return;
+  }
+  params.ExpressionAttributeNames['#t'] =  'tags';
+  var tagNum = 0;
+  while (tags.length > 0)
+  {
+    //introduce tag logic clause in filter expression, or the logic connector "or"
+    if (tagNum == 0)
+    {
+      params.FilterExpression += " AND (";
+    } else
+    {
+      params.FilterExpression += " OR "
+    }
+    // add tag information to filter expression and the object of variables
+    tagNum += 1;
+    params.FilterExpression += `contains(#t, :tag${tagNum})`;
+    params.ExpressionAttributeValues[`:tag${tagNum}`] = {'S': tags.pop()};
+  }
+  params.FilterExpression += ")";
 }
 
-function addRelevanceToSearch(body, returnItems) {
-  /* Adds the number of tag hits
+async function addRelevanceToSearch(body, returnItems) {
+  /* Adds the number of tag hits, with special multi-counting for suggested searches
    * Accepts:
       body (object): search request parameters
       returnItems: list of items to return
    * Returns:
       Nothing.  Modifies newItems
    */
+  // start by trying to use search tags
   var fakeTitle = "tags" in body? body.tags : '';
   var fakePost = {'title':  fakeTitle};
   itemPostTagEnhancer(fakePost);
-  const searchTags = fakePost['tags']
+  var searchTags = fakePost['tags'];
+  // if no meaningful tags, we use user's search history instead
+  if (searchTags.length === 0){
+    const currentUser = 'user_id' in body ? body.user_id : 'jbutt'; // default...
+    try {
+      var getTagsParams = {
+        TableName: "users",
+        KeyConditionExpression: '#i = :id',
+        ExpressionAttributeNames: { '#i': 'id'},
+        ExpressionAttributeValues: {':id': {'S': currentUser}},
+        ProjectionExpression: "recent_searches"
+      };
+      var searchTags = await ddbClient.send(new QueryCommand(getTagsParams));
+      searchTags = 'recent_searches' in searchTags.Items[0] && 
+          'L' in searchTags.Items[0].recent_searches ?
+        searchTags.Items[0].recent_searches.L :
+        [];
+      // turn return into list of just strings
+      searchTags.forEach( (item, index) => {
+        searchTags[index] = item.S;
+      });
+    } catch (err) {
+      console.log(`ERROR itemSearchAddTags -- trying to make tags of suggestions for user ${currentUser}: ${err}`);
+    }
+  }
+  // change searchTags to object counting occurrences
+  const searchtagMap = searchTags.reduce(function (acc, curr) {
+      return acc[curr] ? ++acc[curr] : acc[curr] = 1, acc
+    }, {});
   var itemTagCount;
   for (item of returnItems) {
     itemTagCount = 0;
     for (tag of item.tags.L)
     {
-      if (searchTags.includes(tag.S))
+      if (tag.S in searchtagMap)
       {
-        itemTagCount += 1;
+        itemTagCount += searchtagMap[tag.S];
       }
     }
     item['num_matching_tags'] = {'N' : itemTagCount};
@@ -445,12 +537,13 @@ async function getItemList(body) {
       } catch (err) {
         console.log(`ERROR getItemList with parameters ${JSON.stringify(params)} -- ${err}`);
       }
-      returnItems = returnItems.concat(newItems['Items']);
+     // add new items to return list
+     returnItems = returnItems.concat(newItems["Items"]);
     }
   }
   const currentZip = 'location' in body ? body.location : '70116';
   addDistanceToUser(currentZip, {"Items": returnItems} );
-  addRelevanceToSearch(body, returnItems);
+  await addRelevanceToSearch(body, returnItems);
 return returnItems;
 }
 
@@ -462,7 +555,7 @@ function itemPostTagEnhancer(body) {
   * Returns:
   *   Null.  Alters `body['tags']`.
   */
- // make new array based on any tags already there
+  // make new array based on any tags already there
   let improvedTags = body.hasOwnProperty('tags') ? body['tags'] : [];
   // remove punctuation from both title and tags, in that order -- 
   // Not entirely sure ALL punctuation removal is best
@@ -496,7 +589,6 @@ function itemPostTagEnhancer(body) {
   );
   // fix the body (ody ody ody) 'tags' value
   body['tags'] = improvedTags;
-
 }
 
 module.exports = {
@@ -509,6 +601,7 @@ module.exports = {
   hashPassword,
   updateItem,
   queryMessages,
+  saveUserSearchTerms,
   getUserPhoto,
   getAllUserItems,
   itemPostTagEnhancer,
