@@ -53,24 +53,34 @@ router.get("/:user_id", async (req, res) => {
   }
 });
 
-router.patch("/:user_id", (req, res) => {
-  let current = db.getItem("users", req.params.user_id);
-
-  current = aws.DynamoDB.Converter.unmarshall(current.Item);
-
-  if (_.isUndefined(current)) {
-    return res.status(404).json({ error: "No user with this user_id" });
+router.patch("/:user_id", async (req, res) => {
+  console.log(`Patching info for user ${req.params.user_id}`);
+  try {
+    let current = await db.getItem("users", req.params.user_id);
+    current = aws.DynamoDB.Converter.unmarshall(current.Item);
+    if (_.isUndefined(current)) {
+      return res.status(404).json({ error: "No user with this user_id" });
+    }
+    current.email = _.isUndefined(req.body.email)
+      ? current.email
+      : req.body.email;
+    current.zip = _.isUndefined(req.body.zip) ? current.zip : req.body.zip;
+    await db.updateItem("users", current);
+    // only send back necessary information
+    current = {
+      photo: current.photo,
+      zip: current.zip,
+      email: current.email,
+      id: current.id
+    }
+    console.log(current);
+    res.status(200).json(current);
+  } catch (err) {
+    console.log(`ERROR patch /:user_id for ${req.params.user_id} -- error getting current user info: ${err}`);
+    return res.status(500);
   }
-
-  current.email = _.isUndefined(req.body.email)
-    ? current.email
-    : req.body.email;
-  current.zip = _.isUndefined(req.body.zip) ? current.zip : req.body.zip;
-
-  db.updateItem("users", current);
-
-  res.status(200).json(current);
 });
+
 
 router.delete("/:user_id", customValidation.isLoggedIn, (req, res) => {
   db.deleteItem("users", req.params.user_id);

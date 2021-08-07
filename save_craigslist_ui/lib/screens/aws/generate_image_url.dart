@@ -1,16 +1,15 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 import 'package:image_picker/image_picker.dart';
 import '../../server_url.dart';
 
-Future<Map> generateImageURL(XFile imageFile, String table) async {
+Future<Map> generateImageURL(XFile imageFile, String table, {String fileName: ''}) async {
   try {
     Map body = {
       "table": table,
-      "fileName": imageFile.name,
+      "fileName": fileName,
       "fileType": path.extension(imageFile.path)
     };
     var url = '${hostURL}:${port}/generatePresignedUrl';
