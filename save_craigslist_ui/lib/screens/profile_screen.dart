@@ -35,14 +35,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         appBar: AppBar(title: Text('Profile')),
         body: SingleChildScrollView(
             child: Column(children: [
-                profilePhoto(),
-                username(),
-                email(),
-                zip(),
-                editProfileButton()
-            ])
-        )
-    );
+          profilePhoto(),
+          username(),
+          email(),
+          zip(),
+          editProfileButton()
+        ])));
   }
 
   Widget profilePhoto() {
@@ -68,21 +66,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 fit: BoxFit.fitWidth)
                             // if image has changed, show new photo
                             : Image.file(File(imagePath),
-                                fit: BoxFit.fitWidth)
-                    ),
+                                fit: BoxFit.fitWidth)),
                     Container(
                         alignment: Alignment.bottomLeft,
                         child: new ElevatedButton(
                             style: ButtonStyle(
                                 backgroundColor:
-                                    MaterialStateProperty.all(Colors.green)
-                            ),
+                                    MaterialStateProperty.all(Colors.green)),
                             onPressed: () {
                               _getFromGallery();
                             },
-                            child: Text("PICK FROM \n PHOTOS")
-                        )
-                    ),
+                            child: Text("PICK FROM \n PHOTOS"))),
                     Container(
                       alignment: Alignment.bottomRight,
                       child: new ElevatedButton(
@@ -94,9 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           },
                           child: Text("TAKE PHOTO \n WITH CAMERA")),
                     )
-                ])
-        )
-    );
+                  ])));
   }
 
   Widget username() {
@@ -106,11 +98,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(
             border:
                 Border(bottom: BorderSide(width: 1.0, color: Colors.black))),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Username:'),
-          Text(currentUser.id)
-        ])
-    );
+        child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [Text('Username:'), Text(currentUser.id)]));
   }
 
   Widget email() {
@@ -126,8 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ? Text(currentUser.email)
               : SquareTextField(
                   fieldController: emailController, hintText: 'email')
-        ])
-    );
+        ]));
   }
 
   Widget zip() {
@@ -143,8 +132,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ? Text(currentUser.zip)
               : SquareTextField(
                   fieldController: zipController, hintText: 'zip code')
-        ])
-    );
+        ]));
   }
 
   Widget editProfileButton() {
@@ -168,8 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   });
                 },
                 child: const Text('Edit Profile'),
-              )
-    );
+              ));
   }
 
   void updateUserInfo(email, zip) async {
@@ -196,8 +183,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     var response = await http.patch(
         Uri.parse('${hostURL}:${port}/users/${currentUser.id}'),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode(userInfo)
-    );
+        body: jsonEncode(userInfo));
     print(response.statusCode);
     //If success display success message otherwise display error message.
     if (response.statusCode == 200) {
