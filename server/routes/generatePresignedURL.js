@@ -23,8 +23,16 @@ router.post(
     {
       return res.status(400).json({error: "Incorrect file type"});
     }
-    const fileName = uuidv4();
-    const bucketName = 'savecraigslist' + req.body.table;     //TODO: expand to be items or usersrs
+    // file name will be one if sent from app, or new random one
+    if ( !('fileName' in req.body) || req.body.fileName === '')
+    {
+      var fileName = uuidv4();
+    } else {
+      var fileName = req.body.fileName.split('/').pop();
+      fileName = fileName.substring(0, fileName.indexOf(req.body.fileType));
+    }
+    // create parameters for call to s3
+    const bucketName = 'savecraigslist' + req.body.table;
     const params = {
         Bucket: bucketName,
         Key: fileName + "." + fileType,

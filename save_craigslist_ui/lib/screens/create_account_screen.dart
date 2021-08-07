@@ -139,7 +139,6 @@ class _NewAccountFormState extends State<NewAccountForm> {
 
   _getFromGallery() async {
     // Gets photo from photo library / gallery
-    final picker = ImagePicker();
     XFile? pickedFile = await picker.pickImage(
       source: ImageSource.gallery,
       maxWidth: 1800,
@@ -181,7 +180,7 @@ void createUser(String username, String password, String email, String zip,
   try {
     if (imagePath != null) {
       // Get s3 location for image
-      Map urlInfo = await generateImageURL(XFile(imagePath), "users");
+      Map urlInfo = await generateImageURL(XFile(imagePath), "users", fileName:'');
       // send file to s3 location
       await uploadFile(urlInfo['uploadUrl'], XFile(imagePath));
       newUser['photo'] = urlInfo['fileName'];
