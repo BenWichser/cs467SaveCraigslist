@@ -37,12 +37,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         appBar: AppBar(title: Text('Profile')),
         body: SingleChildScrollView(
             child: Column(children: [
-          profilePhoto(),
-          username(),
-          email(),
-          zip(),
-          editProfileButton()
-        ])));
+                profilePhoto(),
+                username(),
+                email(),
+                zip(),
+                editProfileButton()
+            ])
+        )
+    );
   }
 
   Widget profilePhoto() {
@@ -68,17 +70,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 fit: BoxFit.fitWidth)
                             // if image has changed, show new photo
                             : Image.file(File(imagePath),
-                                fit: BoxFit.fitWidth)),
+                                fit: BoxFit.fitWidth)
+                    ),
                     Container(
                         alignment: Alignment.bottomLeft,
                         child: new ElevatedButton(
                             style: ButtonStyle(
                                 backgroundColor:
-                                    MaterialStateProperty.all(Colors.green)),
+                                    MaterialStateProperty.all(Colors.green)
+                            ),
                             onPressed: () {
                               _getFromGallery();
                             },
-                            child: Text("PICK FROM \n PHOTOS"))),
+                            child: Text("PICK FROM \n PHOTOS")
+                        )
+                    ),
                     Container(
                       alignment: Alignment.bottomRight,
                       child: new ElevatedButton(
@@ -90,7 +96,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           },
                           child: Text("TAKE PHOTO \n WITH CAMERA")),
                     )
-                  ])));
+                ])
+        )
+    );
   }
 
   Widget username() {
@@ -106,7 +114,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ? Text(currentUser.id)
               : SquareTextField(
                   fieldController: usernameController, hintText: 'username')
-        ]));
+        ])
+    );
   }
 
   Widget email() {
@@ -122,7 +131,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ? Text(currentUser.email)
               : SquareTextField(
                   fieldController: emailController, hintText: 'email')
-        ]));
+        ])
+    );
   }
 
   Widget zip() {
@@ -138,7 +148,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ? Text(currentUser.zip)
               : SquareTextField(
                   fieldController: zipController, hintText: 'zip code')
-        ]));
+        ])
+    );
   }
 
   Widget editProfileButton() {
@@ -163,10 +174,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   });
                 },
                 child: const Text('Edit Profile'),
-              ));
+              )
+    );
   }
 
   void updateUserInfo(username, email, zip) async {
+    editMode = !editMode;
     var userInfo = {
       'username': username,
       'email': email,
@@ -210,10 +223,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           zip: userInfo['zip'],
         );
       }
-      setState(() {
-        imageCache?.clear();
-        editMode = !editMode;
-      });
+      imageCache?.clear();
+      imageCache?.clearLiveImages();
+      setState(() {});
 
       final successBar =
           SnackBar(content: Text('Your account details have been updated!'));
