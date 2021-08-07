@@ -43,6 +43,9 @@ router.get("/:user_id/recents", async (req, res) => {
   user = aws.DynamoDB.Converter.unmarshall(user.Item);
   let recents = user.recents;
 
+  if (_.isUndefined(recents)) {
+    return res.status(200).send([]);
+  }
   let recents_details = [];
   let recent;
   let content;
