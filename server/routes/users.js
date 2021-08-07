@@ -20,6 +20,12 @@ router.post(
   customValidation.validate,
   async (req, res) => {
     let password = await db.hashPassword(req.body.password);
+    let exists = await db.getItem("users", req.body.username);
+
+    if (!_.isUndefined(exists.Item)) {
+      return res.status(403).json({ error: "A user with this username already exists" });
+    }
+    
     let newUserParams = {
         email: { S: req.body.email },
         id: { S: req.body.username },
