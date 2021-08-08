@@ -77,7 +77,6 @@ router.patch("/:user_id", async (req, res) => {
       email: current.email,
       id: current.id
     }
-    console.log(current);
     res.status(200).json(current);
   } catch (err) {
     console.log(`ERROR patch /:user_id for ${req.params.user_id} -- error getting current user info: ${err}`);

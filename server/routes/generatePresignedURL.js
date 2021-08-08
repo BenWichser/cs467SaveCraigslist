@@ -24,12 +24,9 @@ router.post(
       return res.status(400).json({error: "Incorrect file type"});
     }
     // file name will be one if sent from app, or new random one
-    console.log(`fileName coming in:  ${req.body.fileName}`);
     if ( !('fileName' in req.body) || req.body.fileName === '')
     {
-      console.log("No fileName passed.  generating new one");
       var fileName = uuidv4();
-      console.log(fileName);
     } else {
       var fileName = req.body.fileName.split('/').pop();
       fileName = fileName.substring(0, fileName.indexOf(req.body.fileType));
@@ -62,7 +59,6 @@ router.post(
         downloadUrl:
             `https://${bucketName}.s3.us-east-2.amazonaws.com/${fileName}.${fileType}`
     };
-    console.log(`generatePresignedURL return from Dynamo: ${JSON.stringify(returnData)}`);
     res.status(201).json(returnData);
     }
    );

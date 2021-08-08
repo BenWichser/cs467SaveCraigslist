@@ -105,6 +105,29 @@ async function updateItem(datatype, data) {
   }
 }
 
+async function updateUserRecents(body) {
+  /* Updates the `recents` field for a user.
+   * Accepts:
+   *  body (marshalled object):  user information
+   * Returns:
+   *  Null.  Alters Dynamo record for user
+   */
+  var params = {
+    TableName: "users",
+    Key: {id: body.id},
+    UpdateExpression:  "SET recents = :recents",
+    ExpressionAttributeValues: {
+      ":recents" :body.recents
+    }
+  }
+  try {
+    const action = await ddbClient.send(new UpdateItemCommand(params));
+    return action;
+  } catch (err) {
+    console.log(`ERROR updateUserRecents for ${body.id.S} with parameters ${JSON.stringify(body)} -- ${err}`);
+  }
+}
+
 async function getItem(datatype, id) {
   // getItem takes the table name and object ID and returns that item
   // datatype: String (One of: "users", "messages", "items")
@@ -660,6 +683,7 @@ module.exports = {
   getOpeningItemList,
   hashPassword,
   updateItem,
+  updateUserRecents,
   queryMessages,
   saveUserSearchTerms,
   getUserPhoto,
