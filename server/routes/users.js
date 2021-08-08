@@ -64,8 +64,18 @@ router.patch("/:user_id", async (req, res) => {
     current.email = _.isUndefined(req.body.email)
       ? current.email
       : req.body.email;
+    const oldZip = current.zip;
     current.zip = _.isUndefined(req.body.zip) ? current.zip : req.body.zip;
+    if ('photo' in req.body)
+    {
+      current.photo = req.body.photo;
+    }
     await db.updateItem("users", current);
+    // if we changed the location, then the user's items should have their location also changed
+    if (oldZip != current.zip)
+    {
+      await db.changeUserItemLocations(current);
+    }
     // only send back necessary information
     current = {
       photo: current.photo,
@@ -73,7 +83,6 @@ router.patch("/:user_id", async (req, res) => {
       email: current.email,
       id: current.id
     }
-    console.log(current);
     res.status(200).json(current);
   } catch (err) {
     console.log(`ERROR patch /:user_id for ${req.params.user_id} -- error getting current user info: ${err}`);

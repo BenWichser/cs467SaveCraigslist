@@ -72,9 +72,8 @@ router.get("/:item_id", async (req, res) => {
   }
 });
 
-router.put(
-  "/:item_id",
-  [
+router.put("/:item_id",
+[
     body("title").exists().isString(),
     body("seller_id").exists().isString(),
     body("price").exists().isFloat(),
@@ -85,6 +84,7 @@ router.put(
   //customValidation.isLoggedIn,
   customValidation.validate,
   async (req, res) => {
+    console.log(`Editing item ${req.params.item_id}`);
     let item = await db.getItem("items", req.params.item_id);
     if (_.isUndefined(item.Item)) {
       return res

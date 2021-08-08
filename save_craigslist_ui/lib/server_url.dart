@@ -1,6 +1,6 @@
-//const hostURL = 'http://localhost';
+const hostURL = 'http://localhost';
 //const hostURL = 'http://10.0.2.2';
-const hostURL = 'http://benwichser.com';
+//const hostURL = 'http://benwichser.com';
 //const hostURL = 'http://192.168.1.139';
 
 

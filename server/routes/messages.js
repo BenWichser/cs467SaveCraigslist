@@ -32,8 +32,8 @@ router.post("/:sender_id/:receiver_id", async (req, res) => {
   sender.recents = route_utils.recent_uniques(sender.recents, receiver_mapped);
   receiver.recents = route_utils.recent_uniques(receiver.recents, sender_mapped);
 
-  db.updateItem("users", aws.DynamoDB.Converter.marshall(sender));
-  db.updateItem("users", aws.DynamoDB.Converter.marshall(receiver));
+  db.updateUserRecents(aws.DynamoDB.Converter.marshall(sender));
+  db.updateUserRecents(aws.DynamoDB.Converter.marshall(receiver));
 
   res.status(201).json(new_message);
 });

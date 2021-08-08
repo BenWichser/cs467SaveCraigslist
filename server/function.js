@@ -48,39 +48,83 @@ async function updateItem(datatype, data) {
   // data: Object
   let params;
   if (datatype === "users") {
+    var updateExpression = "SET email = :email, zip = :zip";
+    var expressionAttributeValues = {
+      ":email": {S: data.email},
+      ":zip": {S: data.zip}
+    };
+    if ('photo' in data) {
+      updateExpression += ", photo = :photo";
+      expressionAttributeValues[":photo"] = {S: data.photo};
+    }
     params = {
       TableName: datatype,
       Key: { id: { S: data.id } },
-      UpdateExpression: "SET email = :email, zip = :zip",
-      ExpressionAttributeValues: {
-        ":email": { S: data.email },
-        ":zip": { S: data.zip },
-      },
+      UpdateExpression: updateExpression,
+      ExpressionAttributeValues: expressionAttributeValues,
     };
   } else {
-    params = {
-      TableName: datatype,
-      Key: { id: { S: data.id } },
-      UpdateExpression:
-        "SET title = :title, price = :price, #loc = :location, #stat = :status, description = :description",
-      ExpressionAttributeNames: {
-        "#loc" : "location",
-        "#stat": "status"
-      },
-      ExpressionAttributeValues: {
+    var updateExpression = "SET title = :title, price = :price, #loc = :location, #stat = :status, description = :description";
+    var expressionAttributeValues = {
         ":title": { S: data.title },
         ":price": { N: data.price },
         ":location": { S: data.location },
         ":status": { S: data.status },
         ":description": { S: data.description },
+    };
+    if ('photos' in data) {
+      updateExpression += ", photos = :photos";
+      expressionAttributeValues[":photos"] = {
+        L: [
+          {
+            M:
+            {
+            'caption': {S: data.photos[0]['caption']},
+            'URL': {S: data.photos[0]['URL']}
+            }
+          }
+        ]
+      };
+    }
+     params = {
+      TableName: datatype,
+      Key: { id: { S: data.id } },
+      UpdateExpression: updateExpression,
+      ExpressionAttributeNames: {
+        "#loc" : "location",
+        "#stat": "status"
       },
+      ExpressionAttributeValues: expressionAttributeValues,
     };
   }
   try {
     const action = await ddbClient.send(new UpdateItemCommand(params));
     return action;
   } catch (err) {
-    console.log(`ERROR updateItem for ${JSON.stringify(data)} -- ${err}`);
+    console.log(`ERROR updateItem for ${JSON.stringify(data)}  with parameters ${JSON.stringify(params)} -- ${err}`);
+  }
+}
+
+async function updateUserRecents(body) {
+  /* Updates the `recents` field for a user.
+   * Accepts:
+   *  body (marshalled object):  user information
+   * Returns:
+   *  Null.  Alters Dynamo record for user
+   */
+  var params = {
+    TableName: "users",
+    Key: {id: body.id},
+    UpdateExpression:  "SET recents = :recents",
+    ExpressionAttributeValues: {
+      ":recents" :body.recents
+    }
+  }
+  try {
+    const action = await ddbClient.send(new UpdateItemCommand(params));
+    return action;
+  } catch (err) {
+    console.log(`ERROR updateUserRecents for ${body.id.S} with parameters ${JSON.stringify(body)} -- ${err}`);
   }
 }
 
@@ -630,6 +674,46 @@ function itemPostTagEnhancer(body) {
   body["tags"] = improvedTags;
 }
 
+function changeItemLocation(item, newLocation) {
+  /* Changes the location of an item
+   * Accepts:
+   *  item (object)
+   *  newLocation (string)
+   * Returns:
+   *  Null.  Changes Dynamo items.
+   */
+  params = {
+    TableName: "items",
+    Key: {id: item.id},
+    UpdateExpression: "SET #loc = :loc",
+    ExpressionAttributeNames: {
+      "#loc": "location"
+    },
+    ExpressionAttributeValues: {
+      ":loc": {S: newLocation}
+    }
+  }
+  try {
+    ddbClient.send(new UpdateItemCommand(params));
+  } catch (err) {
+    console.log(`ERROR updating location for item ${item.id} using parameters ${params}:  ${err}`);
+  }
+}
+
+
+async function changeUserItemLocations(user) {
+  /* Changes the locations for every listed item associated with a user
+   * Accepts:
+   *  user (object): User information
+   * Returns:
+   *  Null.  Changes Dynamo entries for user.
+   */
+  var itemsToUpdate = await getAllUserItems(user.id);
+  await itemsToUpdate.forEach( (x) => {
+    changeItemLocation(x, user.zip);
+  });
+}
+
 module.exports = {
   createItem,
   getItem,
@@ -639,6 +723,7 @@ module.exports = {
   getOpeningItemList,
   hashPassword,
   updateItem,
+  updateUserRecents,
   queryMessages,
   saveUserSearchTerms,
   getUserPhoto,
@@ -646,4 +731,5 @@ module.exports = {
   itemPostTagEnhancer,
   makeListingsOutput,
   getItemList,
+  changeUserItemLocations
 };
