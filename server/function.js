@@ -674,6 +674,46 @@ function itemPostTagEnhancer(body) {
   body["tags"] = improvedTags;
 }
 
+function changeItemLocation(item, newLocation) {
+  /* Changes the location of an item
+   * Accepts:
+   *  item (object)
+   *  newLocation (string)
+   * Returns:
+   *  Null.  Changes Dynamo items.
+   */
+  params = {
+    TableName: "items",
+    Key: {id: item.id},
+    UpdateExpression: "SET #loc = :loc",
+    ExpressionAttributeNames: {
+      "#loc": "location"
+    },
+    ExpressionAttributeValues: {
+      ":loc": {S: newLocation}
+    }
+  }
+  try {
+    ddbClient.send(new UpdateItemCommand(params));
+  } catch (err) {
+    console.log(`ERROR updating location for item ${item.id} using parameters ${params}:  ${err}`);
+  }
+}
+
+
+async function changeUserItemLocations(user) {
+  /* Changes the locations for every listed item associated with a user
+   * Accepts:
+   *  user (object): User information
+   * Returns:
+   *  Null.  Changes Dynamo entries for user.
+   */
+  var itemsToUpdate = await getAllUserItems(user.id);
+  await itemsToUpdate.forEach( (x) => {
+    changeItemLocation(x, user.zip);
+  });
+}
+
 module.exports = {
   createItem,
   getItem,
@@ -691,4 +731,5 @@ module.exports = {
   itemPostTagEnhancer,
   makeListingsOutput,
   getItemList,
+  changeUserItemLocations
 };
