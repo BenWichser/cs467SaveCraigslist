@@ -65,6 +65,10 @@ router.patch("/:user_id", async (req, res) => {
       ? current.email
       : req.body.email;
     current.zip = _.isUndefined(req.body.zip) ? current.zip : req.body.zip;
+    if ('photo' in req.body)
+    {
+      current.photo = req.body.photo;
+    }
     await db.updateItem("users", current);
     // only send back necessary information
     current = {

@@ -48,14 +48,20 @@ async function updateItem(datatype, data) {
   // data: Object
   let params;
   if (datatype === "users") {
+    var updateExpression = "SET email = :email, zip = :zip";
+    var expressionAttributeValues = {
+      ":email": {S: data.email},
+      ":zip": {S: data.zip}
+    };
+    if ('photo' in data) {
+      updateExpression += ", photo = :photo";
+      expressionAttributeValues[":photo"] = {S: data.photo};
+    }
     params = {
       TableName: datatype,
       Key: { id: { S: data.id } },
-      UpdateExpression: "SET email = :email, zip = :zip",
-      ExpressionAttributeValues: {
-        ":email": { S: data.email },
-        ":zip": { S: data.zip },
-      },
+      UpdateExpression: updateExpression,
+      ExpressionAttributeValues: expressionAttributeValues,
     };
   } else {
     params = {

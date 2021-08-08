@@ -168,9 +168,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // if image was selected, get a URL from s3 and upload to s3
     if (imagePath != null) {
       try {
+        var fileName = currentUser.photo != currentUser.defaultPhoto
+            ? currentUser.photo
+            : '';
         Map urlInfo = await generateImageURL(XFile(imagePath), "users",
-            fileName: currentUser.photo);
+            fileName: fileName);
         print(urlInfo);
+        userInfo['photo'] = urlInfo['fileName'];
         await uploadFile(urlInfo['uploadUrl'], XFile(imagePath));
       } catch (e) {
         final photoErrorBar =
