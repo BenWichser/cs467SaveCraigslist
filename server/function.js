@@ -64,29 +64,44 @@ async function updateItem(datatype, data) {
       ExpressionAttributeValues: expressionAttributeValues,
     };
   } else {
-    params = {
-      TableName: datatype,
-      Key: { id: { S: data.id } },
-      UpdateExpression:
-        "SET title = :title, price = :price, #loc = :location, #stat = :status, description = :description",
-      ExpressionAttributeNames: {
-        "#loc" : "location",
-        "#stat": "status"
-      },
-      ExpressionAttributeValues: {
+    var updateExpression = "SET title = :title, price = :price, #loc = :location, #stat = :status, description = :description";
+    var expressionAttributeValues = {
         ":title": { S: data.title },
         ":price": { N: data.price },
         ":location": { S: data.location },
         ":status": { S: data.status },
         ":description": { S: data.description },
+    };
+    if ('photos' in data) {
+      updateExpression += ", photos = :photos";
+      expressionAttributeValues[":photos"] = {
+        L: [
+          {
+            M:
+            {
+            'caption': {S: data.photos[0]['caption']},
+            'URL': {S: data.photos[0]['URL']}
+            }
+          }
+        ]
+      };
+    }
+     params = {
+      TableName: datatype,
+      Key: { id: { S: data.id } },
+      UpdateExpression: updateExpression,
+      ExpressionAttributeNames: {
+        "#loc" : "location",
+        "#stat": "status"
       },
+      ExpressionAttributeValues: expressionAttributeValues,
     };
   }
   try {
     const action = await ddbClient.send(new UpdateItemCommand(params));
     return action;
   } catch (err) {
-    console.log(`ERROR updateItem for ${JSON.stringify(data)} -- ${err}`);
+    console.log(`ERROR updateItem for ${JSON.stringify(data)}  with parameters ${JSON.stringify(params)} -- ${err}`);
   }
 }
 

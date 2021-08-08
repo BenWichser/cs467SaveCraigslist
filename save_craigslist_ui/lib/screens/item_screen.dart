@@ -295,21 +295,6 @@ class _ItemScreenState extends State<ItemScreen> {
   }
 
   void updateItem(item, title, price, description) async {
-    // first upload any new photo
-    if (imagePath != null) {
-      try {
-        Map urlInfo = await generateImageURL(XFile(imagePath), "items",
-            fileName: item.photos[0]['URL']);
-        print(urlInfo);
-        await uploadFile(urlInfo['uploadUrl'], XFile(imagePath));
-      } catch (e) {
-        final photoErrorBar =
-            SnackBar(content: Text('Error uploading new photo'));
-        ScaffoldMessenger.of(context).showSnackBar(photoErrorBar);
-        Navigator.pop(context);
-        return;
-      }
-    }
     var itemInfo = {
       'title': title,
       'price': double.parse(price),
@@ -321,6 +306,26 @@ class _ItemScreenState extends State<ItemScreen> {
       'status': item.status,
     };
 
+    // first upload any new photo
+    if (imagePath != null) {
+      try {
+        var fileName =
+            item.photos != item.defaultPhotos ? item.photos[0]['URL'] : '';
+        Map urlInfo = await generateImageURL(XFile(imagePath), "items",
+            fileName: fileName);
+        print(urlInfo);
+        itemInfo['photos'] = [
+          {'caption': '', 'URL': urlInfo['fileName']}
+        ];
+        await uploadFile(urlInfo['uploadUrl'], XFile(imagePath));
+      } catch (e) {
+        final photoErrorBar =
+            SnackBar(content: Text('Error uploading new photo'));
+        ScaffoldMessenger.of(context).showSnackBar(photoErrorBar);
+        Navigator.pop(context);
+        return;
+      }
+    }
     print('Updating ${item.id} with this info:');
     print(itemInfo);
 
