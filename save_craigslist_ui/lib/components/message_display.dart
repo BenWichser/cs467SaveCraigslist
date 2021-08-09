@@ -17,7 +17,7 @@ class MessageDisplay extends StatelessWidget {
         margin: BubbleEdges.only(top: 10, left: 40),
         alignment: Alignment.topRight,
         nip: BubbleNip.rightBottom,
-        child: Text(message.content),
+        child: Text(message.content, style: TextStyle(fontSize: 14)),
       );
     }
     else {
@@ -26,7 +26,7 @@ class MessageDisplay extends StatelessWidget {
         margin: BubbleEdges.only(top: 10, right: 40),
         alignment: Alignment.topLeft,
         nip: BubbleNip.leftBottom,
-        child: Text(message.content),
+        child: Text(message.content, style: TextStyle(fontSize: 14)),
       );
     }
 

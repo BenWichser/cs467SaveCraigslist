@@ -50,91 +50,119 @@ class _NewAccountFormState extends State<NewAccountForm> {
     return SingleChildScrollView(
         child: Form(
             key: _formKey,
-            child: Column(
-              children: [
-                GetPhoto(),
-                SquareTextField(
-                    fieldController: usernameController, hintText: 'Username'),
-                SquareTextField(
-                    fieldController: passwordController, hintText: 'Password'),
-                SquareTextField(
-                    fieldController: emailController,
-                    hintText: 'Email Address'),
-                SquareTextField(
-                    fieldController: zipController, hintText: 'Zip Code'),
-                Container(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          /* ***************************
-                    Need to add photos, get seller_id and location from current user
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  GetPhoto(),
+                  SquareTextField(
+                      fieldController: usernameController, hintText: 'Username'),
+                  SquareTextField(
+                      fieldController: passwordController, hintText: 'Password'),
+                  SquareTextField(
+                      fieldController: emailController,
+                      hintText: 'Email Address'),
+                  SquareTextField(
+                      fieldController: zipController, hintText: 'Zip Code'),
+                  Container(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            createUser(
+                                usernameController.text,
+                                passwordController.text,
+                                emailController.text,
+                                zipController.text,
+                                imagePath,
+                                context);
 
-                    ***************************** */
-                          createUser(
-                              usernameController.text,
-                              passwordController.text,
-                              emailController.text,
-                              zipController.text,
-                              imagePath,
-                              context);
-
-                          //Reset fields and hide keyboard
-                          _formKey.currentState?.reset();
-                          SystemChannels.textInput
-                              .invokeMethod('TextInput.hide');
-                        }
-                      },
-                      child: const Text('Create Account!'),
-                    ))
-              ],
-            )));
+                            //Reset fields and hide keyboard
+                            _formKey.currentState?.reset();
+                            SystemChannels.textInput.invokeMethod('TextInput.hide');
+                          }
+                        },
+                        child: const Text('Create Account!'),
+                      )
+                    )
+                ],
+              )
+            )
+          )
+        );
   }
 
   Widget GetPhoto() {
-    return Padding(
-        padding: EdgeInsets.all(20),
-        child: AspectRatio(
-            aspectRatio: 1,
-            // Start with no photo, so we display two buttons
-            child: imageFile == null
-                ? Container(
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        ElevatedButton(
-                          style: ButtonStyle(
-                              backgroundColor:
-                                  MaterialStateProperty.all(Colors.green)),
-                          onPressed: () {
-                            _getFromGallery();
-                          },
-                          child: Text("PICK FROM PHOTOS"),
-                        ),
-                        Container(
-                          height: 40.0,
-                        ),
-                        ElevatedButton(
-                          style: ButtonStyle(
-                              backgroundColor:
-                                  MaterialStateProperty.all(Colors.green)),
-                          onPressed: () {
-                            _getFromCamera();
-                          },
-                          child: Text("TAKE PHOTO WITH CAMERA"),
-                        )
-                      ],
+    return AspectRatio(
+      aspectRatio: 1,
+      // Start with no photo, so we display two buttons
+      child: imageFile == null
+      ? AspectRatio(
+        aspectRatio: 1,
+        child:
+        Container(child:
+          Stack(
+            children: [
+            //Image
+            Container(
+              padding: EdgeInsets.zero,
+              child: Image.asset('assets/images/blank_profile_picture.png')
+            ),
+            Container(
+              alignment: Alignment.bottomLeft,
+              child: Padding(
+                padding: EdgeInsets.all(10), 
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    shape: BoxShape.circle
+                  ),
+                  child: PopupMenuButton<Widget>(
+                  icon: Icon(Icons.photo_camera, size: 30, color: Colors.white),
+                  itemBuilder: (BuildContext context) => [
+                    PopupMenuItem(
+                      child: GestureDetector(
+                        onTap: () {
+                          _getFromGallery();
+                        },
+                        child: Row(
+                          children: [
+                            Icon(Icons.insert_photo_outlined), 
+                            SizedBox(width: 5),
+                            Text('Select Photo')
+                          ]
+                        ) 
+                      )
                     ),
+                    PopupMenuItem(
+                      child: GestureDetector(
+                        onTap: () {
+                          _getFromCamera();
+                        },
+                        child: Row(
+                          children: [
+                            Icon(Icons.photo_camera_outlined), 
+                            SizedBox(width: 5),
+                            Text('Take Photo')
+                          ]
+                        ) 
+                      )
+                    )],
                   )
-                : Container(
-                    // if a photo is selected, we display it instead
-                    child: Image.file(
-                      File(imagePath),
-                      fit: BoxFit.cover,
-                    ),
-                  )));
+                )
+              )
+            ),
+          ]
+        )
+      )
+    )
+    : Container(
+        // if a photo is selected, we display it instead
+        child: Image.file(
+          File(imagePath),
+          fit: BoxFit.cover,
+        ),
+      ));
   }
 
   _getFromGallery() async {

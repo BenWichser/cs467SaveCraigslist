@@ -11,7 +11,10 @@ class LogInScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector( //Hide keyboard when clicked outside text fields
-      onTap: () {SystemChannels.textInput.invokeMethod('TextInput.hide');},
+      onTap: () {
+        FocusScope.of(context).requestFocus(new FocusNode());
+        //SystemChannels.textInput.invokeMethod('TextInput.hide');
+      },
       child: Scaffold(
         appBar: AppBar(title: Center(child: Text('Craigslist++'))),
         body: Column(
@@ -42,6 +45,7 @@ class LogInScreen extends StatelessWidget {
 }
 
   void createAccountAction(BuildContext context){
+    FocusScope.of(context).requestFocus(new FocusNode());
     Navigator.push(
       context,
       MaterialPageRoute<void>(
@@ -74,23 +78,25 @@ class _LogInFormState extends State<LogInForm> {
   Widget build(BuildContext context) {
     return Form(
       key: _formKey,
-      child: Column(
-        children: [
-          SquareTextField(
-            fieldController: _usernameController,
-            hintText: 'Username'),
-          SquareTextField(
-            fieldController: _passwordController,
-            hintText: 'Password'),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: logInButtonAction,
-              child: const Text('Log In!'),
-              )
-          ),
-        ],
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          children: [
+            SquareTextField(
+              fieldController: _usernameController,
+              hintText: 'Username'),
+            SquareTextField(
+              fieldController: _passwordController,
+              hintText: 'Password'),
+            Container(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: logInButtonAction,
+                child: const Text('Log In!'),
+                )
+            ),
+          ],
+        )
       )
     );
   }
@@ -100,13 +106,18 @@ class _LogInFormState extends State<LogInForm> {
 
       String loginResponse = await login(_usernameController.text, _passwordController.text);
 
-      //Reset fields and hide keyboard
-      _formKey.currentState?.reset();
-      SystemChannels.textInput.invokeMethod('TextInput.hide');
+      //Hide keyboard
+      FocusScope.of(context).requestFocus(new FocusNode());
+      
+      //_formKey.currentState?.reset();
+      //SystemChannels.textInput.invokeMethod('TextInput.hide');
 
-      if(loginResponse == 'OK')
+      if(loginResponse == 'OK') {
+        //Reset Fields
+        _usernameController.text = '';
+        _passwordController.text = '';
         //Go to main screen 
-        {Navigator.push(
+        Navigator.push(
           context,
           MaterialPageRoute<void>(
             builder: (BuildContext context) => MainTabController(),

@@ -43,59 +43,89 @@ class _ItemScreenState extends State<ItemScreen> {
     descriptionController.text = widget.item.description!;
 
     return Scaffold(
-        appBar: AppBar(title: Text(widget.item.title)),
-        body: SingleChildScrollView(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      appBar: AppBar(title: Text(widget.item.title)),
+      body: SingleChildScrollView(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           itemPhotos(widget.item),
           itemInfo(widget.item),
           itemDescription(widget.item),
 
           //Either the seller info, or a edit and delete buttons if the current user is the seller
           widget.item.seller_id != currentUser.id
-              ? sellerSection(widget.item, context)
-              : Column(children: [
+            ? sellerSection(widget.item, context)
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
                   editButton(widget.item, context),
+                  cancelButton(context),
                   deleteButton(widget.item.id, context)
-                ]),
-        ])));
+              ]),
+        ])
+      )
+    );
   }
 
   Widget deleteButton(itemId, context) {
     return Container(
-        padding: EdgeInsets.symmetric(horizontal: 20),
-        width: double.infinity,
-        child: ElevatedButton(
-            style: ButtonStyle(
-                backgroundColor: MaterialStateProperty.all(Colors.red)),
+        //padding: EdgeInsets.symmetric(horizontal: 20),
+        //width: double.infinity,
+        child: IconButton(
+            icon: Icon(Icons.delete),
+            //style: ButtonStyle(
+            //    backgroundColor: MaterialStateProperty.all(Colors.red)),
             onPressed: () => showDialog(
                 context: context,
                 builder: (BuildContext context) =>
                     confirmDelete(itemId, context)),
-            child: Text('Delete Item')));
+    ));//child: Text('Delete Item')));
+  }
+
+  Widget cancelButton(context){
+    return editMode
+      ? Padding(
+        padding: EdgeInsets.symmetric(horizontal: 5),
+        child:
+          GestureDetector(
+          onTap: ( () {
+            setState( (){
+              editMode = !editMode;
+            });
+          }),
+          child: Container(
+            padding: EdgeInsets.all(5),
+            decoration: BoxDecoration(border: Border.all(color: Colors.black)),
+            child: Text('cancel')
+          )
+        )
+      )
+      : SizedBox();
   }
 
   Widget editButton(item, context) {
     return Container(
-        padding: EdgeInsets.symmetric(horizontal: 20),
-        width: double.infinity,
-        child: !editMode
-            ? ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    editMode = !editMode;
-                  });
-                },
-                child: Text('Edit Item'))
-            : ElevatedButton(
-                onPressed: () {
-                  updateItem(item, titleController.text, priceController.text,
-                      descriptionController.text);
-                  setState(() {
-                    editMode = !editMode;
-                  });
-                },
-                child: Text('Save')));
+      child: !editMode
+          ? IconButton(
+              icon: Icon(Icons.edit),
+              onPressed: () {
+                setState(() {
+                  editMode = !editMode;
+                });
+              },
+              )
+          : GestureDetector(
+              onTap: () {
+                updateItem(item, titleController.text, priceController.text,descriptionController.text);
+                setState(() {
+                  editMode = !editMode;
+                });
+              },
+              child: Container(
+                padding: EdgeInsets.all(5),
+                decoration: BoxDecoration(border: Border.all(color: Colors.black)),
+                child: Text('Save')
+              )
+            )
+    );
   }
 
   Widget confirmDelete(itemId, context) {
@@ -136,50 +166,91 @@ class _ItemScreenState extends State<ItemScreen> {
 
   Widget itemPhotos(Item item) {
     return Container(
-        padding: EdgeInsets.all(20),
-        child: AspectRatio(
+      padding: EdgeInsets.all(20),
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: !editMode
+          ?
+          // if not edit mode, we show image
+          AspectRatio(
             aspectRatio: 1,
-            child: !editMode
-                ?
-                // if not edit mode, we show image
-                Image.network('${s3ItemPrefix}${item.photos![0]['URL']}',
-                    key: ValueKey(new Random().nextInt(100)))
-                :
-                // if edit mode, we show image with button above
-                Stack(children: <Widget>[
-                    new Container(
-                        padding: EdgeInsets.zero,
-                        child: imagePath == null
-                            // if image hasn't changed yet, show old photo
-                            ? Image(
-                                image: NetworkImage(
-                                    '${s3ItemPrefix}${item.photos![0]['URL']}'),
-                                fit: BoxFit.fitWidth)
-                            // if image has changed, show new photo
-                            : Image.file(File(imagePath),
-                                fit: BoxFit.fitWidth)),
-                    Container(
-                        alignment: Alignment.bottomLeft,
-                        child: new ElevatedButton(
-                            style: ButtonStyle(
-                                backgroundColor:
-                                    MaterialStateProperty.all(Colors.green)),
-                            onPressed: () {
-                              _getFromGallery();
-                            },
-                            child: Text("PICK FROM \n PHOTOS"))),
-                    Container(
-                      alignment: Alignment.bottomRight,
-                      child: new ElevatedButton(
-                          style: ButtonStyle(
-                              backgroundColor:
-                                  MaterialStateProperty.all(Colors.green)),
-                          onPressed: () {
-                            _getFromCamera();
-                          },
-                          child: Text("TAKE PHOTO \n WITH CAMERA")),
-                    )
-                  ])));
+            child: Container(
+              child: Image.network(
+                '${s3ItemPrefix}${item.photos![0]['URL']}', 
+                fit: BoxFit.cover,
+                key: ValueKey(new Random().nextInt(100))
+              )
+            )
+          )
+          :
+          // if edit mode, we show image with button above
+          Stack(
+          children: [
+          //Image
+          new Container(
+            padding: EdgeInsets.zero,
+            child: imagePath == null
+            // if image hasn't changed yet, show old photo
+            ? AspectRatio(
+                aspectRatio: 1,
+                child: Image(
+                  image: NetworkImage('${s3ItemPrefix}${item.photos![0]['URL']}'),
+                  fit: BoxFit.fitWidth))
+            // if image has changed, show new photo
+            : AspectRatio(
+              aspectRatio: 1, 
+              child: Image.file(File(imagePath), fit: BoxFit.fitWidth)
+              )
+            ),
+            //Edit photo button
+            Container(
+              alignment: Alignment.bottomLeft,
+              child: Padding(
+                padding: EdgeInsets.all(10), 
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    shape: BoxShape.circle
+                  ),
+                  child: PopupMenuButton<Widget>(
+                  icon: Icon(Icons.photo_camera, size: 30, color: Colors.white),
+                  itemBuilder: (BuildContext context) => [
+                    PopupMenuItem(
+                      child: GestureDetector(
+                        onTap: () {
+                          _getFromGallery();
+                        },
+                        child: Row(
+                          children: [
+                            Icon(Icons.insert_photo_outlined), 
+                            SizedBox(width: 5),
+                            Text('Select Photo')
+                          ]
+                        ) 
+                      )
+                    ),
+                    PopupMenuItem(
+                      child: GestureDetector(
+                        onTap: () {
+                          _getFromCamera();
+                        },
+                        child: Row(
+                          children: [
+                            Icon(Icons.photo_camera_outlined), 
+                            SizedBox(width: 5),
+                            Text('Take Photo')
+                          ]
+                        ) 
+                      )
+                    )],
+                  )
+                )
+              )
+            ),
+          ]
+        )
+      )
+    );
   }
 
   Widget itemInfo(item) {
@@ -187,7 +258,9 @@ class _ItemScreenState extends State<ItemScreen> {
         padding: EdgeInsets.symmetric(horizontal: 20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           title(item),
-          Text(readableDate(item.date_added)),
+          !editMode
+          ? Text(readableDate(item.date_added))
+          : SizedBox(),
           price(item)
         ]));
   }
@@ -235,14 +308,16 @@ class _ItemScreenState extends State<ItemScreen> {
         child: Padding(
             padding: EdgeInsets.only(right: 20, left: 20, bottom: 20),
             child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Padding(
                   padding: EdgeInsets.only(bottom: 10),
                   child: Text('Seller',
                       style: TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 20))),
               sellerInfo(item, context)
-            ])));
+            ])
+        )
+    );
   }
 
   Widget sellerInfo(item, BuildContext context) {
@@ -264,8 +339,9 @@ class _ItemScreenState extends State<ItemScreen> {
                         padding: EdgeInsets.only(right: 5),
                         child: CircleAvatar(
                             backgroundColor: Colors.black,
-                            foregroundImage: NetworkImage(
-                                '${s3UserPrefix}${sellerJSON['photo']}'))),
+                            foregroundImage: NetworkImage('${s3UserPrefix}${sellerJSON['photo']}')
+                        )
+                    ),
                     Text(item.seller_id)
                   ]),
                   ElevatedButton(
@@ -336,18 +412,29 @@ class _ItemScreenState extends State<ItemScreen> {
     print(response.statusCode);
     print('Response from server: ${response.body}');
 
+    imageCache?.clear();
+    imageCache?.clearLiveImages();
+
     //If success display success message otherwise display error message.
     if (response.statusCode == 200) {
       final successBar = SnackBar(content: Text('Your item has been updated!'));
       ScaffoldMessenger.of(context).showSnackBar(successBar);
-    } else {
-      final successBar =
-          SnackBar(content: Text('Error updating item. Please try again.'));
+
+      //Update current item
+      var itemInfo = jsonDecode(response.body);
+
+      widget.item.title = itemInfo['title'];
+      widget.item.price = double.parse(itemInfo['price']);
+      widget.item.description = itemInfo['description'];
+
+      widget.updateItems();
+      setState(() {});
+
+    } 
+    else {
+      final successBar = SnackBar(content: Text('Error updating item. Please try again.'));
       ScaffoldMessenger.of(context).showSnackBar(successBar);
     }
-    imageCache?.clear();
-    imageCache?.clearLiveImages();
-    setState(() {});
   }
 
   _getFromGallery() async {
