@@ -6,6 +6,7 @@ const express = require("express"),
   aws = require("aws-sdk"),
   customValidation = require("../middleware");
 const router = express.Router();
+const zc = require("zipcodes");
 
 router.use(bodyParser.json());
 
@@ -60,6 +61,10 @@ router.patch("/:user_id", async (req, res) => {
     current = aws.DynamoDB.Converter.unmarshall(current.Item);
     if (_.isUndefined(current)) {
       return res.status(404).json({ error: "No user with this user_id" });
+    }
+    if ("zip" in req.body && zc.lookup(req.body.zip) === undefined)
+    {
+      return res.status(404).json({error: "Zip code does not exist"});
     }
     current.email = _.isUndefined(req.body.email)
       ? current.email
