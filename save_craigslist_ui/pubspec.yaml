@@ -24,8 +24,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.2
-    # cupertino_icons: ^0.1.3
+  cupertino_icons: ^1.0.3
+    #cupertino_icons: ^0.1.3
     # http: ^0.12.1
   http: ^0.13.3
     # permission_handler: ^5.0.0+hotfix.3
@@ -50,8 +50,9 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  #assets:
-  #  - assets/images/profile_picture.png
+  assets:
+    - assets/images/placeholder_image.png
+    - assets/images/blank_profile_picture.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

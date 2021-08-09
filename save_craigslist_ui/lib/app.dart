@@ -7,7 +7,7 @@ class App extends StatelessWidget{
     return MaterialApp(
       title: 'Gurt\'s List',
       theme: ThemeData(primaryColor: Colors.white),
-      //home: MainTabController()
+      //theme: ThemeData.dark(),
       home: LogInScreen()
     );
   }

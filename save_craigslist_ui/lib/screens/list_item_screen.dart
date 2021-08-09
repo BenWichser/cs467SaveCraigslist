@@ -21,22 +21,7 @@ class ListItemScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-          title: Row(children: [
-        CircleAvatar(
-            backgroundColor: Colors.black,
-            foregroundImage: NetworkImage(currentUser.photo)
-            //child: const Text('UN')
-            ),
-        Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10),
-            child: Text(currentUser.id))
-          ]
-        )
-      ),
-      body: ItemForm(updateItems: updateItems),
-    );
+    return ItemForm(updateItems: updateItems);
   }
 }
 
@@ -52,11 +37,9 @@ class ItemForm extends StatefulWidget {
 class _ItemFormState extends State<ItemForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-
   final picker = ImagePicker();
   var imagePath = null;
   var imageFile = null;
-
 
   void initState() {
     SystemChannels.textInput.invokeMethod('TextInput.hide');
@@ -73,112 +56,142 @@ class _ItemFormState extends State<ItemForm> {
     return SingleChildScrollView(
         child: Form(
             key: _formKey,
-            child: Column(
-              children: [
-                GetPhoto(),
-                SquareTextField(
-                  fieldController: titleController, 
-                  hintText: 'Title',
-                  validator: (value) {
-                    if (value == null || value.isEmpty){
-                      return 'Required Field!';
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  GetPhoto(),
+                  SquareTextField(
+                    fieldController: titleController, 
+                    hintText: 'Title',
+                    validator: (value) {
+                      if (value == null || value.isEmpty){
+                        return 'Required Field!';
+                      }
+                      if (value.length > 40){
+                        return 'Too many characters';
+                      }
                     }
-                    if (value.length > 40){
-                      return 'Too many characters';
+                  ),
+                  SquareTextField(
+                    fieldController: priceController,
+                    hintText: 'Price',
+                    validator: (value) {
+                      if (value == null || value.isEmpty ) {
+                        return 'Required Field';
+                      }
+                      if (!isValidPrice(value)) {
+                        return 'Please enter a valid price.';
+                      }
                     }
-                  }
-                ),
-                SquareTextField(
-                  fieldController: priceController,
-                  hintText: 'Price',
-                  validator: (value) {
-                    if (value == null || value.isEmpty ) {
-                      return 'Please enter a price.';
-                    }
-                    if (!isValidPrice(value)) {
-                      return 'Please enter a valid price.';
-                    }
-                  }
-                ),
-                SquareTextField(
-                    fieldController: descriptionController,
-                    hintText: 'Description'
-                ),
-                SquareTextField(
-                  fieldController: tagsController, 
-                  hintText: 'Tags'
-                ),
-                Container(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          postItem(titleController.text, priceController.text, descriptionController.text, tagsController.text, imagePath, widget.updateItems, context);
+                  ),
+                  SquareTextField(
+                      fieldController: descriptionController,
+                      hintText: 'Description (optional)',
+                      validator: (value) {}
+                  ),
+                  SquareTextField(
+                    fieldController: tagsController, 
+                    hintText: 'Tags (optional)',
+                    validator: (value) {}
+                  ),
+                  Container(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            postItem(titleController.text, priceController.text, descriptionController.text, tagsController.text, imagePath, widget.updateItems, context);
 
-                          //Reset fields and hide keyboard
-                          _formKey.currentState?.reset();
-                          SystemChannels.textInput.invokeMethod('TextInput.hide');
+                            //Reset fields and hide keyboard
+                            _formKey.currentState?.reset();
+                            SystemChannels.textInput.invokeMethod('TextInput.hide');
 
-                          //Clear photo
-                          setState((){
-                            imageFile = null;
-                          });
-                        }
-                      },
-                      child: const Text('Post Item!'),
-                    )
-                ),
-              ],
+                            //Clear photo
+                            setState((){
+                              imageFile = null;
+                            });
+                          }
+                        },
+                        child: const Text('Post Item!'),
+                      )
+                  ),
+                ],
+              )
             )
         )
     );
   }
 
   Widget GetPhoto() {
-    return Padding(
-        padding: EdgeInsets.all(20),
-        child: AspectRatio(
-            aspectRatio: 1,
-            // Start with no photo, so we display two buttons
-            child: imageFile == null
-                ? Container(
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        ElevatedButton(
-                          style: ButtonStyle(
-                              backgroundColor:
-                                  MaterialStateProperty.all(Colors.green)),
-                          onPressed: () {
-                            _getFromGallery();
-                          },
-                          child: Text("PICK FROM PHOTOS"),
+    return imageFile == null
+          ? AspectRatio(
+              aspectRatio: 1,
+              child:
+              Container(child:
+                Stack(
+                  children: [
+                  //Image
+                  Container(
+                    padding: EdgeInsets.zero,
+                    child: Image.asset('assets/images/placeholder_image.png')
+                  ),
+                  Container(
+                    alignment: Alignment.bottomLeft,
+                    child: Padding(
+                      padding: EdgeInsets.all(10), 
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          shape: BoxShape.circle
                         ),
-                        Container(
-                          height: 40.0,
-                        ),
-                        ElevatedButton(
-                          style: ButtonStyle(
-                              backgroundColor:
-                                  MaterialStateProperty.all(Colors.green)),
-                          onPressed: () {
-                            _getFromCamera();
-                          },
-                          child: Text("TAKE PHOTO WITH CAMERA"),
+                        child: PopupMenuButton<Widget>(
+                        icon: Icon(Icons.photo_camera, size: 30, color: Colors.white),
+                        itemBuilder: (BuildContext context) => [
+                          PopupMenuItem(
+                            child: GestureDetector(
+                              onTap: () {
+                                _getFromGallery();
+                              },
+                              child: Row(
+                                children: [
+                                  Icon(Icons.insert_photo_outlined), 
+                                  SizedBox(width: 5),
+                                  Text('Select Photo')
+                                ]
+                              ) 
+                            )
+                          ),
+                          PopupMenuItem(
+                            child: GestureDetector(
+                              onTap: () {
+                                _getFromCamera();
+                              },
+                              child: Row(
+                                children: [
+                                  Icon(Icons.photo_camera_outlined), 
+                                  SizedBox(width: 5),
+                                  Text('Take Photo')
+                                ]
+                              ) 
+                            )
+                          )],
                         )
-                      ],
-                    ),
-                  )
-                : Container(
-                    // if a photo is selected, we display it instead
-                    child: Image.file(
-                      File(imagePath),
-                      fit: BoxFit.cover,
-                    ),
-                  )
-        )
+                      )
+                    )
+                  ),
+                ]
+              )
+            )
+          )
+      : AspectRatio(
+          aspectRatio: 1, 
+          child: Container(
+            // if a photo is selected, we display it instead
+            child: Image.file(
+              File(imagePath),
+              fit: BoxFit.cover,
+            ),
+          )
     );
   }
 
@@ -215,34 +228,6 @@ class _ItemFormState extends State<ItemForm> {
     }
   }
 }
-
-Widget PriceField(TextEditingController priceController) {
-  return Padding(
-      padding: EdgeInsets.only(top: 5, bottom: 5, left: 20, right: 20),
-      child: Container(
-          padding: EdgeInsets.all(5),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black),
-          ),
-          child: TextFormField(
-              controller: priceController,
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: 'Price',
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty ) {
-                  return 'Please enter a price.';
-                }
-                if (!isValidPrice(value)) {
-                  return 'Please enter a valid price.';
-                }
-              }
-          )
-      )
-  );
-}
-
 
 void postItem(String title, String price, String description, String tags, var imagePath, updateItems, BuildContext context) async {
   var photoslist = [];

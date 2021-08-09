@@ -5,49 +5,43 @@ import '../components/item_display.dart';
 import '../models/item.dart';
 import '../server_url.dart';
 import '../account.dart';
+import '../models/filters.dart';
 
 class ListingsScreen extends StatefulWidget {
   final void Function() updateItems;
-  final String searchTerms;
+  final Filters filters;
 
-  const ListingsScreen({ Key? key, required this.updateItems,  required this.searchTerms}) : super(key: key);
+  const ListingsScreen({ Key? key, required this.updateItems,  required this.filters}) : super(key: key);
 
   @override
   _ListingsScreenState createState() => _ListingsScreenState();
 }
 
 
-class _ListingsScreenState extends State<ListingsScreen> {
-  var searchLocation = currentUser.zip;
-  var radius = 5;
-  var minPrice = 0.0;
-  var maxPrice = double.infinity;
-
-  var sortBy = 'RELEVANCE';
-  
+class _ListingsScreenState extends State<ListingsScreen> {  
   @override
   Widget build(BuildContext context) {
     //We get the list of every item in the database as a future. The futurebuilder checks
     //for data, converts the json to a list of Item objects, creates a list of ItemDisplay widgets
     //and returns the list in a Listview.
-    String searchTerms = widget.searchTerms;
+    String searchTerms = widget.filters.searchTerms;
 
     var appBarHeight = AppBar().preferredSize.height * .8;
     var appBarWidth = AppBar().preferredSize.width;
 
     //Create qurey string based on filter terms provided by user
-    String queryParams = '?user_id=${currentUser.id}&location=${searchLocation}&radius=${radius}';
+    String queryParams = '?user_id=${currentUser.id}&location=${widget.filters.searchLocation}&radius=${widget.filters.radius}';
 
     if (searchTerms != ''){
       queryParams += '&tags=${searchTerms}';
     }
 
-    if(minPrice != 0.0){
-      queryParams += '&minPrice=${minPrice}';
+    if(widget.filters.minPrice != 0.0){
+      queryParams += '&minPrice=${widget.filters.minPrice}';
     }
 
-    if(maxPrice != double.infinity){
-      queryParams += '&maxPrice=${maxPrice}';
+    if(widget.filters.maxPrice != double.infinity){
+      queryParams += '&maxPrice=${widget.filters.maxPrice}';
     }
 
     print(queryParams);
@@ -59,7 +53,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
           title: SizedBox(
             height: appBarHeight, 
             width: appBarWidth,
-            child: filters(),
+            child: filtersBar(),
           )
       ),
       body: FutureBuilder(
@@ -70,7 +64,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
             jsonList = jsonDecode(jsonList.body);
             debugPrint(jsonEncode(jsonList), wrapWidth: 1024);
 
-            sortItems(sortBy, jsonList);
+            sortItems(widget.filters.sortBy, jsonList);
             List<Item> itemList = convertFromJSONToItemList(jsonList);
             List<ItemDisplay> itemDisplays = createListOfItemDisplays(itemList, widget.updateItems);
             return ListView(children: itemDisplays);
@@ -87,7 +81,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
     ); 
   }
 
-  Widget filters(){
+  Widget filtersBar(){
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween, 
       children: [
@@ -103,7 +97,10 @@ class _ListingsScreenState extends State<ListingsScreen> {
     return PopupMenuButton(
       child: Row(children: [
         Icon(Icons.location_pin), 
-        Text(radius > 1 ? '${searchLocation} - ${radius} Miles' : '${searchLocation} - ${radius} Mile')
+        Text(widget.filters.radius > 1 
+          ? '${widget.filters.searchLocation} - ${widget.filters.radius} Miles' 
+          : '${widget.filters.searchLocation} - ${widget.filters.radius} Mile'
+        )
       ]),
       itemBuilder: (BuildContext context) => [
         zipField(),
@@ -114,7 +111,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
 
   PopupMenuItem zipField(){
     TextEditingController zipController = TextEditingController();
-    zipController.text = searchLocation;
+    zipController.text = widget.filters.searchLocation;
 
     final GlobalKey<FormState> _zipKey = GlobalKey<FormState>();
 
@@ -140,7 +137,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
             onFieldSubmitted: (value) {
               if (_zipKey.currentState!.validate()){
                 setState(() {
-                  searchLocation = value;
+                  widget.filters.searchLocation = value;
                 });
                 Navigator.pop(context);
               }
@@ -179,11 +176,11 @@ class _ListingsScreenState extends State<ListingsScreen> {
               child: Text('50 miles')
             )
           ],
-          onSaved: (value) {radius = value!;},
+          onSaved: (value) {widget.filters.radius = value!;},
           onChanged: (value) {
-            setState((){radius = value!;});
+            setState((){widget.filters.radius = value!;});
           },
-          decoration: InputDecoration(hintText: '${radius} miles', border: OutlineInputBorder())
+          decoration: InputDecoration(hintText: '${widget.filters.radius} miles', border: OutlineInputBorder())
         )
       )
     );
@@ -192,7 +189,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
   Widget sortDropdown(){
     return PopupMenuButton<String>(
       icon: Icon(Icons.sort, size: 25),
-      onSelected: (selection) {setState((){sortBy = selection;});},
+      onSelected: (selection) {setState((){widget.filters.sortBy = selection;});},
       itemBuilder: (BuildContext context) => [
         PopupMenuItem(
           child: Text('Sort by:', style: TextStyle(color: Colors.black)),
@@ -200,22 +197,22 @@ class _ListingsScreenState extends State<ListingsScreen> {
           
         ),
         CheckedPopupMenuItem(
-          checked: sortBy == 'DATE',
-          value: 'DATE',
-          child: Text('Date')
-        ),
-        CheckedPopupMenuItem(
-          checked: sortBy == 'PRICE',
-          value: 'PRICE',
-          child: Text('Price')
-        ),
-        CheckedPopupMenuItem(
-          checked: sortBy == 'RELEVANCE',
+          checked: widget.filters.sortBy == 'RELEVANCE',
           value: 'RELEVANCE',
           child: Text('Relevance')
         ),
         CheckedPopupMenuItem(
-          checked: sortBy == 'DISTANCE',
+          checked: widget.filters.sortBy == 'DATE',
+          value: 'DATE',
+          child: Text('Date')
+        ),
+        CheckedPopupMenuItem(
+          checked: widget.filters.sortBy == 'PRICE',
+          value: 'PRICE',
+          child: Text('Price')
+        ),
+        CheckedPopupMenuItem(
+          checked: widget.filters.sortBy == 'DISTANCE',
           value: 'DISTANCE',
           child: Text('Distance')
         )
@@ -226,13 +223,13 @@ class _ListingsScreenState extends State<ListingsScreen> {
   Widget priceRangeFilters(){
 
     TextEditingController minPriceController = TextEditingController();
-    if(minPrice != 0.0){
-      minPriceController.text = minPrice.toStringAsFixed(2);
+    if(widget.filters.minPrice != 0.0){
+      minPriceController.text = widget.filters.minPrice.toStringAsFixed(2);
     }
 
     TextEditingController maxPriceController = TextEditingController();
-    if(maxPrice != double.infinity){
-      maxPriceController.text = maxPrice.toStringAsFixed(2);
+    if(widget.filters.maxPrice != double.infinity){
+      maxPriceController.text = widget.filters.maxPrice.toStringAsFixed(2);
     }
 
     final GlobalKey<FormState> _priceRangeKey = GlobalKey<FormState>();
@@ -258,9 +255,9 @@ class _ListingsScreenState extends State<ListingsScreen> {
                         border: OutlineInputBorder()
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty ) {
-                          return 'Please enter a minimum price.';
-                        }
+                        //if (value == null || value.isEmpty ) {
+                        //  return 'Please enter a minimum price.';
+                       // }
                         if (!isValidPrice(value)) {
                           return 'Please enter a valid price.';
                         }
@@ -268,8 +265,12 @@ class _ListingsScreenState extends State<ListingsScreen> {
                       onFieldSubmitted: (value) {
                         if (_priceRangeKey.currentState!.validate()){
                           setState((){
-                          minPrice = double.parse(minPriceController.text);
-                          maxPrice = double.parse(maxPriceController.text);                    
+                            (minPriceController.text.isEmpty) 
+                              ? widget.filters.minPrice = 0.0
+                              : widget.filters.minPrice = double.parse(minPriceController.text);
+                            (maxPriceController.text.isEmpty)
+                              ? widget.filters.maxPrice = double.infinity
+                              : widget.filters.maxPrice = double.parse(maxPriceController.text);                    
                           });
                           Navigator.pop(context);
                         }
@@ -286,9 +287,9 @@ class _ListingsScreenState extends State<ListingsScreen> {
                         border: OutlineInputBorder()
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty ) {
-                          return 'Please enter a maximum price.';
-                        }
+                        //if (value == null || value.isEmpty ) {
+                        //  return 'Please enter a maximum price.';
+                       /// }
                         if (!isValidPrice(value)) {
                           return 'Please enter a valid price.';
                         }
@@ -296,8 +297,12 @@ class _ListingsScreenState extends State<ListingsScreen> {
                       onFieldSubmitted: (value) {
                         if (_priceRangeKey.currentState!.validate()){
                           setState((){
-                          minPrice = double.parse(minPriceController.text);
-                          maxPrice = double.parse(maxPriceController.text);                    
+                            (minPriceController.text.isEmpty) 
+                              ? widget.filters.minPrice = 0.0
+                              : widget.filters.minPrice = double.parse(minPriceController.text);
+                            (maxPriceController.text.isEmpty)
+                              ? widget.filters.maxPrice = double.infinity
+                              : widget.filters.maxPrice = double.parse(maxPriceController.text);                    
                           });
                           Navigator.pop(context);
                         }
@@ -397,7 +402,12 @@ bool isValidZip(zip){
   }
 }
 
-bool isValidPrice(String value) {
+bool isValidPrice(String? value) {
+  //Empty strings are valid prices
+  if (value == null || value.isEmpty ) {
+    return true;
+  } 
+
   try {
     double.parse(value);
   } 

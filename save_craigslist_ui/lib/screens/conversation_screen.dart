@@ -22,6 +22,8 @@ class ConversationScreen extends StatefulWidget {
 }
 
 class _ConversationScreenState extends State<ConversationScreen> {
+  var bottomAppBarHeight = AppBar().preferredSize.height * .8;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -54,6 +56,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
     TextEditingController messageController = TextEditingController();
 
     return BottomAppBar(
+      child: SizedBox(
+      height: bottomAppBarHeight,
       child: 
       Padding(
         padding: EdgeInsets.all(5), 
@@ -80,7 +84,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
               }
             )
         ]))
-    );
+    ));
   }
 
   void sendMessage(String messageContent) async {
@@ -117,19 +121,22 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
           //The text field is translated up to stay on top of the keyboard. This was
           //covering some of the messages, so the messages are in a sizedbox sized to stay
-          //above the keyboard and text field. 
+          //above the keyboard and text field.
 
-          return Align(alignment: Alignment.topCenter, child: SizedBox(
-              width: MediaQuery.of(context).size.width,
-              height: keyboardHeight == 0 
-                ? MediaQuery.of(context).size.height - 160
-                : (MediaQuery.of(context).size.height - keyboardHeight - 160),
+          return SizedBox(
+            width: MediaQuery.of(context).size.width,
+            height: keyboardHeight == 0 
+              ? MediaQuery.of(context).size.height - AppBar().preferredSize.height - 80
+              : (MediaQuery.of(context).size.height - keyboardHeight - AppBar().preferredSize.height - 80),
+            child: Align(
+              alignment: Alignment.topCenter, 
               child: ListView(
                 shrinkWrap: true,
                 reverse: true,
                 children: messageDisplays
               )
-          ));
+            )
+          );
         }
         else if (snapshot.hasError){
           return Text('Error loading conversation'); 

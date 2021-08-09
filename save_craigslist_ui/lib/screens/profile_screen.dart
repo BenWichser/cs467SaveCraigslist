@@ -19,10 +19,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  TextEditingController emailController =
-      TextEditingController(text: currentUser.email);
-  TextEditingController zipController =
-      TextEditingController(text: currentUser.zip);
+  TextEditingController emailController = TextEditingController(text: currentUser.email);
+  TextEditingController zipController = TextEditingController(text: currentUser.zip);
 
   bool editMode = false;
   final picker = ImagePicker();
@@ -32,102 +30,155 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: Text('Profile')),
-        body: SingleChildScrollView(
-            child: Column(children: [
-          profilePhoto(),
-          username(),
-          email(),
-          zip(),
-          editProfileButton()
-        ])));
+      appBar: AppBar(title: Text('Profile')),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child:
+            Column(children: [
+            profilePhoto(),
+            username(),
+            email(),
+            zip(),
+            editProfileButton()
+         ])
+        )
+      )
+    );
   }
 
   Widget profilePhoto() {
-    print(currentUser.photo);
     return Container(
-        padding: EdgeInsets.all(20),
-        child: AspectRatio(
-            aspectRatio: 1,
-            child: !editMode
-                ?
-                // if not edit mode, we show image
-                Image.network('${currentUser.photo}',
-                    key: ValueKey(new Random().nextInt(100)))
-                :
-                // if edit mode, we show image with button above
-                Stack(children: <Widget>[
-                    new Container(
-                        padding: EdgeInsets.zero,
-                        child: imagePath == null
-                            // if image hasn't changed yet, show old photo
-                            ? Image(
-                                image: NetworkImage('${currentUser.photo}'),
-                                fit: BoxFit.fitWidth)
-                            // if image has changed, show new photo
-                            : Image.file(File(imagePath),
-                                fit: BoxFit.fitWidth)),
-                    Container(
-                        alignment: Alignment.bottomLeft,
-                        child: new ElevatedButton(
-                            style: ButtonStyle(
-                                backgroundColor:
-                                    MaterialStateProperty.all(Colors.green)),
-                            onPressed: () {
-                              _getFromGallery();
-                            },
-                            child: Text("PICK FROM \n PHOTOS"))),
-                    Container(
-                      alignment: Alignment.bottomRight,
-                      child: new ElevatedButton(
-                          style: ButtonStyle(
-                              backgroundColor:
-                                  MaterialStateProperty.all(Colors.green)),
-                          onPressed: () {
-                            _getFromCamera();
-                          },
-                          child: Text("TAKE PHOTO \n WITH CAMERA")),
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: !editMode
+          ?
+          // if not edit mode, we show image
+          Image.network(
+            '${currentUser.photo}', 
+            key: ValueKey(new Random().nextInt(100)),
+            fit: BoxFit.cover
+          )
+          :
+          // if edit mode, we show image with button above
+          Stack(children: <Widget>[
+            Container(
+              padding: EdgeInsets.zero,
+              child: imagePath == null
+                // if image hasn't changed yet, show old photo
+                ? AspectRatio(
+                    aspectRatio: 1,
+                    child: Image(
+                      image: NetworkImage('${currentUser.photo}'),
+                      fit: BoxFit.cover
                     )
-                  ])));
+                  )
+                // if image has changed, show new photo
+                : AspectRatio(
+                    aspectRatio: 1,
+                    child: Image.file(
+                      File(imagePath),
+                      fit: BoxFit.cover)
+                  )
+            ),
+            Container(
+              alignment: Alignment.bottomLeft,
+              child: Padding(
+                padding: EdgeInsets.all(10), 
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    shape: BoxShape.circle
+                  ),
+                  child: PopupMenuButton<Widget>(
+                  icon: Icon(Icons.photo_camera, size: 30, color: Colors.white),
+                  itemBuilder: (BuildContext context) => [
+                    PopupMenuItem(
+                      child: GestureDetector(
+                        onTap: () {
+                          _getFromGallery();
+                        },
+                        child: Row(
+                          children: [
+                            Icon(Icons.insert_photo_outlined), 
+                            SizedBox(width: 5),
+                            Text('Select Photo')
+                          ]
+                        ) 
+                      )
+                    ),
+                    PopupMenuItem(
+                      child: GestureDetector(
+                        onTap: () {
+                          _getFromCamera();
+                        },
+                        child: Row(
+                          children: [
+                            Icon(Icons.photo_camera_outlined), 
+                            SizedBox(width: 5),
+                            Text('Take Photo')
+                          ]
+                        ) 
+                      )
+                    )],
+                  )
+                )
+              )
+            ),
+          ])
+        )
+      );
   }
 
   Widget username() {
     return Container(
-        padding: EdgeInsets.all(15.0),
+        padding: EdgeInsets.symmetric(vertical: 10),
         width: double.infinity,
         decoration: BoxDecoration(
-            border:
-                Border(bottom: BorderSide(width: 1.0, color: Colors.black))),
+            border: Border(bottom: BorderSide(width: 1.0, color: Colors.black))),
         child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [Text('Username:'), Text(currentUser.id)]));
+            children: [
+              Text('Username:', style: TextStyle(fontWeight: FontWeight.bold)), 
+              Text(currentUser.id)]
+          )
+        );
   }
 
   Widget email() {
     return Container(
-        padding: EdgeInsets.all(15.0),
-        width: double.infinity,
-        decoration: BoxDecoration(
-            border:
-                Border(bottom: BorderSide(width: 1.0, color: Colors.black))),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Email:'),
+      padding: EdgeInsets.symmetric(vertical: 10),
+      width: double.infinity,
+      decoration: 
+        !editMode ? 
+        BoxDecoration(
+          border: Border(bottom: BorderSide(width: 1.0, color: Colors.black))
+        )
+        : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, 
+        children: [
+          Text('Email:', style: TextStyle(fontWeight: FontWeight.bold)),
           !editMode
-              ? Text(currentUser.email)
-              : SquareTextField(
-                  fieldController: emailController, hintText: 'email')
-        ]));
+          ? Text(currentUser.email)
+          : SquareTextField(fieldController: emailController, hintText: 'email')
+        ]
+      )
+    );
   }
 
   Widget zip() {
     return Container(
-        padding: EdgeInsets.all(15.0),
+        padding: EdgeInsets.symmetric(vertical: 10),
         width: double.infinity,
-        decoration: BoxDecoration(
-            border:
-                Border(bottom: BorderSide(width: 1.0, color: Colors.black))),
+        decoration: 
+        !editMode ? 
+        BoxDecoration(
+          border: Border(bottom: BorderSide(width: 1.0, color: Colors.black))
+        )
+        : null,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Zip Code:'),
+          Text('Zip Code:', style: TextStyle(fontWeight: FontWeight.bold)),
           !editMode
               ? Text(currentUser.zip)
               : SquareTextField(
@@ -137,7 +188,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget editProfileButton() {
     return Container(
-        padding: EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(vertical: 5),
         width: double.infinity,
         child: editMode
             ? ElevatedButton(
@@ -155,7 +206,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     editMode = !editMode;
                   });
                 },
-                child: const Text('Edit Profile'),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.edit), 
+                    SizedBox(width: 10), 
+                    Text('Edit Profile')
+                ]),
               ));
   }
 
@@ -198,9 +255,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             email: userInfo['email']!,
             id: userInfo['id']!,
             zip: userInfo['zip'],
-            photo:
-                'https://savecraigslistusers.s3.us-east-2.amazonaws.com/${userInfo['photo']!}');
-      } else {
+            photo: '${s3UserPrefix}${userInfo['photo']!}');
+      } 
+      else {
         currentUser = User(
           email: userInfo['email']!,
           id: userInfo['id']!,
