@@ -88,7 +88,8 @@ class _MessagesScreenState extends State<MessagesScreen> {
       }
     }
 
-    return conversations;
+    List<Conversation> reversedConversations = new List.from(conversations.reversed);
+    return reversedConversations;
   }
 
   List<ConversationDisplay> createListOfConversationDisplays(List<Conversation> conversations){
@@ -99,6 +100,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
       ConversationDisplay displayableConversation = ConversationDisplay(conversation: conversation, updateConversations: updateConversations);
       displayableConversations.add(displayableConversation);
     }
+
 
     return displayableConversations;
   }
